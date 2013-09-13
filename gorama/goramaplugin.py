@@ -8,7 +8,7 @@
 # the copyright notices.
 # 
 # ----------------------------------------------------------------------
-# This PyMOL Plugin is Copyright (C) 2006 by Raul Mera-Adasme
+# This PyMOL Plugin is Copyright (C) 2013 by Raul Mera-Adasme
 # 
 #                        All Rights Reserved
 # 
@@ -30,14 +30,10 @@
 # PERFORMANCE OF THIS SOFTWARE.
 # ------------------------------
 
-#################################################################################################
+
 ##This work is dedicated to the long life of the Ven. Khempo Phuntzok Tenzin Rinpoche.##
-#################################################################################################
-#
-#Just a small plugin to color each frame of a trajectory with a different color, 
-#starting from blue for the first to
-#red for the last.
-#
+
+
 from chempy.models import Indexed
 from chempy import Bond, Atom
 from pymol import cmd

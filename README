@@ -1,8 +1,7 @@
 PyMOL plugins with gochem!
 
-A framework to develop PyMOL plugins
-using gochem. A PyMOL plugin executes a go/gochem
-program using JSON to communicat with it via stdin/stdout.
+A framework to develop PyMOL plugins using gochem. A PyMOL plugin executes 
+a go/gochem program using JSON to communicates with it via stdin/stdout.
 
 It currently contains only a proof of concept, which is anyway functional.
 When properly installed (the go executable must be in the path and be named gorama),
