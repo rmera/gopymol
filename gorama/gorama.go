@@ -37,33 +37,68 @@ package main
 import (
 	"bufio"
 	"github.com/rmera/gochem"
+	"github.com/rmera/scu"
 	"os"
+	"fmt"
+	"strings"
 )
 
-func main() {
-	mol, coords, err := chem.DecodePyMolStream(bufio.NewReader(os.Stdin))
-	if err != nil {
-		panic(err)
-	}
-	chem.FixNumbering(mol)
-	ramalist, err := chem.RamaList(mol, "ABC D", []int{0, -1}) ////
-	if err != nil {
-		panic(err)
-	}
-	//	ramalist2, index := chem.RamaResidueFilter(ramalist, []string{"GLY"}, true)
-	rama, err := chem.RamaCalc(coords, ramalist)
-	if err != nil {
-		panic(err)
-	}
-	//	var i int
-	//	for i = 0; i < len(ramalist); i++ {
-	//		if index[i] != -1 {
-	//			break
-	//		}
-	//	}
-	err = chem.RamaPlot(rama, []int{}, "Ramachandran", "Ramachandran plot")
-	if err != nil {
-		panic(err)
-	}
+//For most plugins you dont really need to report errors like this, just panicking or using log.fatal should be enough.
+//Here I use JSON errors as a test. They would be useful if you want to implement some recovery behavior.
 
+func main() {
+	stdin:=bufio.NewReader(os.Stdin)
+	options,err:=chem.DecodeJSONOptions(stdin)
+	if err!=nil{
+		fmt.Fprint(os.Stderr,chem.MakeJSONError("options","main",err))
+		panic(err)
+	}
+	mols:=make([]*chem.Topology,0,len(options.SelNames))
+	coordset:=make([]*chem.CoordMatrix,0,len(options.SelNames))
+	for _,_=range(options.SelNames){
+		mol, coords, err := chem.DecodeJSONMolecule(stdin,options.AtomsPerSel[0])
+		if err != nil {
+			panic(err)
+		}
+		mols=append(mols,mol)
+		coordset=append(coordset,coords)
+	}
+	ramadata:=make([][][]float64,0,0)
+	var HLS [][]int
+	var HL []int
+	for k,mol:=range(mols){
+		HL=[]int{}
+		oldres1:=mol.Atom(0).Molid+1  //the residues should be contiguous!!!
+		chem.FixNumbering(mol)
+		ramalist, err := chem.RamaList(mol, "ABC DEFGHI", []int{0, -1}) ////
+		if err != nil {
+			panic(err)
+		}
+		ramalist2,index := chem.RamaResidueFilter(ramalist, options.StringOptions[0], false)
+		rama, err := chem.RamaCalc(coordset[k], ramalist2)
+		if err != nil {
+			panic(err)
+		}
+		ramadata=append(ramadata,rama)
+		var i int
+		if options.IntOptions!=nil && options.IntOptions[0]!=nil {
+			for i = 0; i < len(ramalist); i++ {
+				fmt.Println(i,i+oldres1,index[i],options.IntOptions[0])
+				if index[i] != -1 &&  scu.IsInInt(i+oldres1,options.IntOptions[0]) {
+					HL=append(HL,index[i])
+					fmt.Println("NAME:", ramalist[index[i]].Molname)
+				}
+			}
+		HLS=append(HLS,HL)
+		}
+	}
+	name:=append(options.SelNames,"Rama")
+	if len(ramadata)==1{
+		err = chem.RamaPlot(ramadata[0], HL, "Ramachandran plot", strings.Join(name,"_"))
+	}else{
+		err = chem.RamaPlotParts(ramadata,HLS ,"Ramachandran plot", strings.Join(name,"_"))
+	}
+	if err != nil {
+		fmt.Fprint(os.Stderr,chem.MakeJSONError("options","main",err))
+	}
 }

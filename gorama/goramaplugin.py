@@ -46,17 +46,32 @@ from subprocess import Popen, PIPE
 
 	
 #this reads 2 structures, calculates RMSD for each atom in backbone and assigns that value to b-factor of the atom. It sets b-factors for all other atoms to 0
-def jsoner(sel1): 
-	q1=cmd.get_model(sel1)
-	proc = Popen("gorama", shell=True, stdin=PIPE)
-	coords=[]
-	for i in q1.atom:
-		viej=Atom2gcRef(i)
-		proc.stdin.write(viej[0]+"\n")
-		proc.stdin.write(viej[1]+"\n")
+def jsoner(sel1):
+	q1=[]
+	lens=[]
+	states=[]
+	for j in sel1:
+		q1.append(cmd.get_model(j))
+		lens.append(len(q1[-1].atom))
+		states.append(1)
+	proc = Popen("gorama", shell=True, stdin=PIPE, stderr=PIPE)
+	options=json.dumps({"SelNames":sel1,"AtomsPerSel":lens,"StatesPerSel":states,"StringOptions":[["GLY"]]})
+	proc.stdin.write(options+"\n")
+	for k in q1:
+		for i in k.atom:
+			atom,coords=Atom2gcRef(i)
+			proc.stdin.write(atom+"\n")
+			proc.stdin.write(coords+"\n")
 	proc.stdin.close()
 	if  proc.wait() != 0:
 		print "There were some errors"
+	#some errors maybe just warnings
+	for i in proc.stderr:
+		try:
+			print json.loads(i)
+		except:
+			print i
+
 		
 
 def Atom2gcRef(i):
@@ -72,9 +87,10 @@ def Atom2gcRef(i):
 def goRamaDialog(app): 
 
 	sel = tkSimpleDialog.askstring("goRama",
-                                       'Enter a selection name',
+                                       'Enter selection names separated by commas',
                                        parent=app.root)
-	jsoner(sel)
+	selsp=sel.split(",")
+	jsoner(selsp)
  
 def __init__(self):
 	self.menuBar.addmenuitem('Plugin', 'command',
