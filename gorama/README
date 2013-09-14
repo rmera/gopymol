@@ -1,0 +1,34 @@
+goRama is a plugin for PyMOL written in Go using the Gochem library,
+plus a "bridging" part in Python. It obtains Ramachandran plots
+for PyMOL selections. Its main purpose is to serve as
+a proof of concept for the writing of PyMOL plugins in Go/Gochem
+by using JSON-enconded data transmited via unix-like pipes.
+
+In any case, the plugin is quite functional, although a few more
+features could be added with a bit more time to mess with the Tk
+interface.
+
+In order to install goRama, put the go binary (will be distributed
+together with the source for x86-64, so people dont need the go
+toolchain) in the path, and the Python file in the PyMOL plugin 
+directory. Make sure the name of the binary is gorama.
+
+Once installed, you can use goRama from the plugin menu of
+PyMOL. After calling it, supply 1 or more selections separated
+by commas (,). Each sequence must contain only contiguous residues.
+A Ramachandran plot in png format,  named after the used selections, 
+will appear in the working directory.
+
+If one selection is supplied, each data point will be colored
+from red to blue to green according to the position of the 
+corresponding residue in the sequence of the selction. If several
+selections are given, the colors will correspond to the selection
+to which each point belong (red for the first selection, green for
+the last one).
+
+goRama illustrates communication of atomic data of several PyMOL
+selections, each with one state, to Go, without data being transfered
+back. Some basic options (the number of atoms in each selection) is
+also transfered.
+
+

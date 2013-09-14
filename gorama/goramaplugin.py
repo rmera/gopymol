@@ -52,10 +52,11 @@ def jsoner(sel1):
 	states=[]
 	for j in sel1:
 		q1.append(cmd.get_model(j))
+		print "current sel: ", j, len(q1[-1].atom)
 		lens.append(len(q1[-1].atom))
 		states.append(1)
-	proc = Popen("gorama", shell=True, stdin=PIPE, stderr=PIPE)
-	options=json.dumps({"SelNames":sel1,"AtomsPerSel":lens,"StatesPerSel":states,"StringOptions":[["GLY"]]})
+	proc = Popen("gorama", shell=True, stdin=PIPE)  #, stderr=PIPE)
+	options=json.dumps({"SelNames":sel1,"AtomsPerSel":lens,"StatesPerSel":states,"StringOptions":[["GLY"]]})  #, "IntOptions":[[5, 11]] })
 	proc.stdin.write(options+"\n")
 	for k in q1:
 		for i in k.atom:
@@ -66,12 +67,12 @@ def jsoner(sel1):
 	if  proc.wait() != 0:
 		print "There were some errors"
 	#some errors maybe just warnings
-	for i in proc.stderr:
-		try:
-			print json.loads(i)
-		except:
-			print i
-
+#	for i in proc.stderr:
+#		try:
+#			print json.loads(i)
+#		except:
+#			print i
+#
 		
 
 def Atom2gcRef(i):
