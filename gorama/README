@@ -33,7 +33,8 @@ back. Some basic options (the number of atoms in each selection) is
 also transfered.
 
 There is no publication for the Gochem library  yet. If you use goRama,
-or another program based on  Gochem please cite the library as:
+or another program based on Gochem before such a publication is
+available, please cite the library in your publication as:
 
 Mera-Adasme, R., Pesonen, J. "Gochem: a library for computational 
 chemistry". https://www.github.com/rmera/gochem

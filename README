@@ -1,22 +1,24 @@
 PyMOL plugins with gochem!
 
-A framework to develop PyMOL plugins using gochem. A PyMOL plugin executes 
-a go/gochem program using JSON to communicates with it via stdin/stdout.
+A framework to develop PyMOL plugins using Gochem library.
+(https://www.github.com/rmera/gochem). A PyMOL plugin executes a 
+Go/Gochem program using JSON to communicates with it via stdin/stdout.
 
-It currently contains only a proof of concept, which is anyway functional.
-When properly installed (the go executable must be in the path and be named gorama),
-it will take a selection from PyMOL and produce a Ramachandran plot for it. The residues
-in the selection must be contiguous, and only one frame is supported.
+In the current proof of concept, only a stream from python to Go is used
+ containing atomic data for and only one state, and a few simple options.
+A protocol for more complex communication involving multiple states for 
+PyMOL selections, and transfer of data from the go program back to the
+calling plugin will be implemented.
 
-In this case only a stream from python to go is used containing only atomic data 
-(no options) and only one state, so it is the simplest case. A protocol for more 
-complex communication involving multiple states for PyMOL selections, multiple 
-selections, options and transfer of data from the go program back to the calling
-plugin will be implemented.
-
-Notice that the go program here will not work with the master branch of gochem. 
+Notice that the go program here will not work with the master branch of Gochem. 
 You need to use the appropiate (pymol) branch. I do not make any claim about 
 these plugins working at a given time, The project is under heavy development.
 
+There is no publication on Gochem yet. If you use one of the plugins here,
+or any program based on Gochem before such a publication is available,
+please cite the library in your publication as:
+
+Mera-Adasme, R., Pesonen, J. "Gochem: a library for computational 
+chemistry". https://www.github.com/rmera/gochem
 
 
