@@ -1,4 +1,3 @@
-// +build plot
 package main
 
 // Copyright Notice
@@ -35,7 +34,7 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/rmera/gochem"
-	"github.com/rmera/scu"
+//	"github.com/rmera/scu"
 	"log"
 	"os"
 	"strings"
@@ -52,56 +51,52 @@ func main() {
 		fmt.Fprint(os.Stderr, err.Marshal())
 		log.Fatal(err)
 	}
-	mols := make([]*chem.Topology, 0, len(options.SelNames))
-	coordset := make([]*chem.CoordMatrix, 0, len(options.SelNames))
-	for k, _ := range options.SelNames {
-		mol, coords, err := chem.DecodeJSONMolecule(stdin, options.AtomsPerSel[k],1)
-		if err != nil {
-			fmt.Fprint(os.Stderr, err.Marshal())
-			log.Fatal(err)
-		}
-		mols = append(mols, mol)
-		coordset = append(coordset, coords[0])
-	}
-	//The program itself
-	ramadata := make([][][]float64, 0, 0)
-	var HLS [][]int
-	var HL []int
-	for k, mol := range mols {
-
-		fmt.Println("len in go", mol.Len(), coordset[k].NumVec()) //////
-		HL = []int{}
-		oldres1 := mol.Atom(0).Molid + 1 //the residues should be contiguous!!!
-		chem.FixNumbering(mol)
-		ramalist, err := chem.RamaList(mol, "ABC DEFGHI", []int{0, -1}) ////
-		if err != nil {
-			log.Fatal(err)
-		}
-		ramalist2, index := chem.RamaResidueFilter(ramalist, options.StringOptions[0], false)
-		rama, err := chem.RamaCalc(coordset[k], ramalist2)
-		if err != nil {
-			log.Fatal(err)
-		}
-		ramadata = append(ramadata, rama)
-		var i int
-		if options.IntOptions != nil && options.IntOptions[0] != nil {
-			for i = 0; i < len(ramalist); i++ {
-				fmt.Println(i, i+oldres1, index[i], options.IntOptions[0])
-				if index[i] != -1 && scu.IsInInt(i+oldres1, options.IntOptions[0]) {
-					HL = append(HL, index[i])
-					fmt.Println("NAME:", ramalist[index[i]].Molname)
-				}
-			}
-			HLS = append(HLS, HL)
-		}
-	}
-	name := append(options.SelNames, "Rama")
-	if len(ramadata) == 1 {
-		err = chem.RamaPlot(ramadata[0], HL, "Ramachandran plot", strings.Join(name, "_"))
-	} else {
-		err = chem.RamaPlotParts(ramadata, HLS, "Ramachandran plot", strings.Join(name, "_"))
-	}
+	mol, coordarray, err := chem.DecodeJSONMolecule(stdin, options.AtomsPerSel[0],1)
 	if err != nil {
-		fmt.Fprint(os.Stderr, chem.MakeJSONError("process", "main", err).Marshal())
+		fmt.Fprint(os.Stderr, err.Marshal())
+		log.Fatal(err)
+	}
+	coords := coordarray[0]
+	var report *bufio.Writer
+	//The program itself
+	for {
+		reportname:=strings.Join([]string{"reduce_report",options.SelNames[0],"log"},".")
+		rep,err:=os.Create(reportname)
+			if err!=nil{
+				break
+			}
+		defer rep.Close()
+		report=bufio.NewWriter(rep)
+		break
+	}
+	var build int
+	if len(options.IntOptions)==0 || len(options.IntOptions[0])==0{
+		build=2
+	}else{
+		build=options.IntOptions[0][0]
+	}
+	newmol,err2:=chem.Reduce(mol,coords,build,report)
+	if err!=nil{
+		fmt.Fprint(os.Stderr,chem.MakeJSONError("process","chem.Reduce",err).Marshal())
+		log.Fatal(err)
+
+		}
+	//Start transfering data back.
+	info:=new(chem.JSONInfo)
+	info.Molecules=1
+	info.FramesPerMolecule=[]int{1}
+	info.AtomsPerMolecule=[]int{newmol.Len()}
+	mar,err2:=info.Marshal()
+	if err2!=nil{
+		fmt.Fprint(os.Stderr, err2)
+		log.Fatal(err2)
+	}
+	fmt.Fprint(os.Stdout,mar)
+	fmt.Fprint(os.Stdout,"\n")
+	if err2=chem.TransmitMoleculeJSON(newmol,newmol.Coords,nil,nil,os.Stdout); err!=nil{
+		fmt.Fprint(os.Stderr,err)
+		log.Fatal(err2)
 	}
 }
+
+
