@@ -41,6 +41,7 @@ import tkSimpleDialog
 import tkMessageBox
 import json
 from subprocess import Popen, PIPE
+import array
 
 		
 
@@ -52,7 +53,7 @@ def jsoner(sel):
 	q1=cmd.get_model(sel)
 	lens.append(len(q1.atom))
 	states.append(1)
-	proc = Popen("goreduce", shell=True, stdin=PIPE) #, stdout=PIPE)
+	proc = Popen("goreduce", shell=True, stdin=PIPE, stdout=PIPE)
 	options=json.dumps({"SelNames":[sel],"AtomsPerSel":lens,"StatesPerSel":states})  #, "IntOptions":[[5, 11]] })
 	proc.stdin.write(options+"\n")
 	for i in q1.atom:
@@ -60,41 +61,46 @@ def jsoner(sel):
 		proc.stdin.write(atom+"\n")
 		proc.stdin.write(coords+"\n")
 	proc.stdin.close()
-#	if  proc.wait() != 1:
-#		print "There were some errors"
+	if  proc.wait() != 1:
+		print "There were some errors"
 #	for j in proc.stderr:
-#		print(json.loads(j))
+#		print(json.loads(j))a
 #	proc.stderr.close()	
-#	model,info=get_go_output(proc.stdout)
-#	cmd.load_model(model,sel+"_H")
+#	for i in proc.stdout:
+#		print json.loads(i)
+	mod, info=get_go_output(proc)
+	print "exit!!"
+	cmd.load_model(mod,sel+"_H")
 
 
 
 
 
 #parses the json output from go. Just copypaste it in your plugin.
-def get_go_output(stdout):
-	model=Indexed()
+def get_go_output(proc):
+	vmodel=Indexed()
 	atoms=0
 	atomsread=0
-	readingatoms=False
-	readingcoords=False
-	readingbfactors=False
-	readingss=False
+	ratoms=False
+	rcoords=False
+	rbfactors=False
+	rss=False
 	first=True
-	for v in stdout:
+	while(True):
+		v=proc.stdout.readline()
+		print "VVV", v
+		print "LULA LULA LULA", first, ratoms, rcoords
 		if first:
 			first=False
-			print "v", v
 			info=json.loads(v)
-			atoms=info["AtomsPerMolecule"]
-			if atoms!=len(q1):
-				print "wrong number of atoms!", atoms, len(q1)
-				break
-			readingatoms=True
+			atoms=info["AtomsPerMolecule"][0]
+			ratoms=True
+			print "LALA"
 			continue
-		if readingatoms:
+		if ratoms:
+			print "YAY"
 			ad=json.loads(v)
+#			print "v atom", json.loads(v)
 			at=Atom()
 			at.name=ad["Name"]
 			at.symbol=ad["Symbol"]
@@ -102,44 +108,49 @@ def get_go_output(stdout):
 			at.id=ad["Id"]
 			at.resi_number=ad["Molid"]
 			at.resn=ad["Molname"]
-			model.atom.append(at)
+			vmodel.atom.append(at)
 			++atomsread
 			if atomsread==atoms:
-				readingatoms=False
-				readingcoords=True
+				ratoms=False
+				r=True
 				atomsread=0
 				continue
-			if readingcoords:
-				coords=json.loads(v)
-				model.atom[atomsread].coord=coords
-				++atomsread
-				if atomsread==atoms:
-					readingcoords=False
-					atomsread=0
-					if  info["Bfactors"]:
-						readingbfactors=True
-						continue
-					if info["SS"]:
-						readingss=True
-						continue
-			#In many cases this part will not be needed
-			if readingbfactors:
-				bf=json.loads(v)
-				model.atom[atomsread].b=bf
-				++atomsread
-				if atomsread==atoms:
-					readingbfactors=False
-					if info["SS"]:
-						readingss=True
-						continue
-			#This one should be needed only seldomly
-			if readingss:
-				SS=json.loads(v)
-				model.atom[atomsread].ss=SS
-				++atomsread
-				if atomsread==atoms:
-					readingss=False #not really needed
-			return model, info
+		if rcoords:
+			print "yuy"
+			coords=json.loads(v)
+			vmodel.atom[atomsread].coord=coords
+			++atomsread
+			if atomsread==atoms:
+				rcoords=False
+				atomsread=0
+				if  info["Bfactors"]:
+					rbfactors=True
+				if info["SS"]:
+					rss=True
+				continue
+		#In many cases this part will not be needed
+		if rbfactors:
+			print "YAYAYAYAYA"
+			bf=json.loads(v)
+			vmodel.atom[atomsread].b=bf
+			++atomsread
+			if atomsread==atoms:
+				rbfactors=False
+				if info["SS"]:
+					rss=True
+				continue
+		#This one should be needed only seldomly
+		if rss:
+			print "yey"
+			SS=json.loads(v)
+			vmodel.atom[atomsread].ss=SS
+			++atomsread
+			if atomsread==atoms:
+				rss=False
+		print "me fui con una deuda"
+		break
+	print "que chachu"
+	return vmodel, info
 
 
 

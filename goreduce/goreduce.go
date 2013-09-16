@@ -81,24 +81,23 @@ func main() {
 			log.Fatal(err2)
 			}
 	}
-	//Start transfering data back.
+	//Start transfering data back
 	info:=new(chem.JSONInfo)
 	info.Molecules=1
 	info.FramesPerMolecule=[]int{1}
 	info.AtomsPerMolecule=[]int{newmol.Len()}
-	mar,err2:=info.Marshal()
-	if err2!=nil{
-		fmt.Println(err2, "VIEJA")
+	if err2:=info.Send(os.Stdout); err2!=nil{
 		fmt.Fprint(os.Stderr, err2)
 		log.Fatal(err2)
 	}
-	fmt.Println("MAR",mar) //////////////7
-	fmt.Fprint(os.Stdout,mar)
-	fmt.Fprint(os.Stdout,"\n")
-	if err2=chem.TransmitMoleculeJSON(newmol,newmol.Coords,nil,nil,os.Stdout); err2!=nil{
-		fmt.Fprint(os.Stderr,err)
+	//	fmt.Fprint(os.Stdout,mar)
+	//	fmt.Fprint(os.Stdout,"\n")
+	if err2:=chem.TransmitMoleculeJSON(newmol,newmol.Coords,nil,nil,os.Stdout); err2!=nil{
+		fmt.Fprint(os.Stderr,err2)
 		log.Fatal(err2)
 	}
+
+	fmt.Fprint(os.Stderr,"todo se derrumbo dentro de mi dentro de mi")
 }
 
 
