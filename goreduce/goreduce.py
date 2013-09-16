@@ -52,7 +52,7 @@ def jsoner(sel):
 	q1=cmd.get_model(sel)
 	lens.append(len(q1.atom))
 	states.append(1)
-	proc = Popen("gorama", shell=True, stdin=PIPE, stdout=PIPE)
+	proc = Popen("goreduce", shell=True, stdin=PIPE) #, stdout=PIPE)
 	options=json.dumps({"SelNames":[sel],"AtomsPerSel":lens,"StatesPerSel":states})  #, "IntOptions":[[5, 11]] })
 	proc.stdin.write(options+"\n")
 	for i in q1.atom:
@@ -60,11 +60,13 @@ def jsoner(sel):
 		proc.stdin.write(atom+"\n")
 		proc.stdin.write(coords+"\n")
 	proc.stdin.close()
-	if  proc.wait() != 0:
-		print "There were some errors"
-	else:
-		model,info=get_go_output(proc.stdout)
-		cmd.load_model(model,sel+"_H")
+#	if  proc.wait() != 1:
+#		print "There were some errors"
+#	for j in proc.stderr:
+#		print(json.loads(j))
+#	proc.stderr.close()	
+#	model,info=get_go_output(proc.stdout)
+#	cmd.load_model(model,sel+"_H")
 
 
 
@@ -83,6 +85,7 @@ def get_go_output(stdout):
 	for v in stdout:
 		if first:
 			first=False
+			print "v", v
 			info=json.loads(v)
 			atoms=info["AtomsPerMolecule"]
 			if atoms!=len(q1):
@@ -172,7 +175,7 @@ def goReduceDialog(app):
 	sel = tkSimpleDialog.askstring("goReduce",
                                        'Enter the selection to protonate',
                                        parent=app.root)
-	jsoner(selsp)
+	jsoner(sel)
  
 def __init__(self):
 	self.menuBar.addmenuitem('Plugin', 'command',

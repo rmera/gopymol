@@ -57,16 +57,15 @@ func main() {
 		log.Fatal(err)
 	}
 	coords := coordarray[0]
-	var report *bufio.Writer
+	var rep *os.File
 	//The program itself
 	for {
 		reportname:=strings.Join([]string{"reduce_report",options.SelNames[0],"log"},".")
-		rep,err:=os.Create(reportname)
-			if err!=nil{
+		rep,err2:=os.Create(reportname)
+			if err2!=nil{
 				break
 			}
 		defer rep.Close()
-		report=bufio.NewWriter(rep)
 		break
 	}
 	var build int
@@ -75,12 +74,13 @@ func main() {
 	}else{
 		build=options.IntOptions[0][0]
 	}
-	newmol,err2:=chem.Reduce(mol,coords,build,report)
-	if err!=nil{
-		fmt.Fprint(os.Stderr,chem.MakeJSONError("process","chem.Reduce",err).Marshal())
-		log.Fatal(err)
-
-		}
+	newmol,err2:=chem.Reduce(mol,coords,build,rep)
+	if err2!=nil{
+		fmt.Fprint(os.Stderr,chem.MakeJSONError("process","chem.Reduce",err2)) //Not always fatal.
+		if  newmol==nil{ // !strings.Contains(err2.Error(),"invalid argument"){
+			log.Fatal(err2)
+			}
+	}
 	//Start transfering data back.
 	info:=new(chem.JSONInfo)
 	info.Molecules=1
@@ -88,12 +88,14 @@ func main() {
 	info.AtomsPerMolecule=[]int{newmol.Len()}
 	mar,err2:=info.Marshal()
 	if err2!=nil{
+		fmt.Println(err2, "VIEJA")
 		fmt.Fprint(os.Stderr, err2)
 		log.Fatal(err2)
 	}
+	fmt.Println("MAR",mar) //////////////7
 	fmt.Fprint(os.Stdout,mar)
 	fmt.Fprint(os.Stdout,"\n")
-	if err2=chem.TransmitMoleculeJSON(newmol,newmol.Coords,nil,nil,os.Stdout); err!=nil{
+	if err2=chem.TransmitMoleculeJSON(newmol,newmol.Coords,nil,nil,os.Stdout); err2!=nil{
 		fmt.Fprint(os.Stderr,err)
 		log.Fatal(err2)
 	}
