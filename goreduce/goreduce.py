@@ -61,8 +61,8 @@ def jsoner(sel):
 		proc.stdin.write(atom+"\n")
 		proc.stdin.write(coords+"\n")
 	proc.stdin.close()
-	if  proc.wait() != 1:
-		print "There were some errors"
+#	if  proc.wait() != 1:
+#		print "There were some errors"
 #	for j in proc.stderr:
 #		print(json.loads(j))a
 #	proc.stderr.close()	
@@ -70,7 +70,8 @@ def jsoner(sel):
 #		print json.loads(i)
 	mod, info=get_go_output(proc)
 	print "exit!!"
-	cmd.load_model(mod,sel+"_H")
+	con=mod.convert_to_connected()
+	cmd.load_model(con,sel+"_H",discrete=1,zoom=1)
 
 
 
@@ -97,8 +98,8 @@ def get_go_output(proc):
 			ratoms=True
 			print "LALA"
 			continue
-		if ratoms:
-			print "YAY"
+		if "Molname" in v:
+			print "YAY", atoms, atomsread, v
 			ad=json.loads(v)
 #			print "v atom", json.loads(v)
 			at=Atom()
@@ -109,17 +110,20 @@ def get_go_output(proc):
 			at.resi_number=ad["Molid"]
 			at.resn=ad["Molname"]
 			vmodel.atom.append(at)
-			++atomsread
-			if atomsread==atoms:
+			atomsread=atomsread+1
+			if atomsread==atoms-1:
 				ratoms=False
 				r=True
 				atomsread=0
-				continue
-		if rcoords:
+			continue
+		if "Coords" in v and not "Molname" in v:
 			print "yuy"
 			coords=json.loads(v)
-			vmodel.atom[atomsread].coord=coords
-			++atomsread
+			print "coords!!", coords["Coords"], atomsread
+			vmodel.atom[atomsread].coord=coords["Coords"]
+			print "coords in mol!", vmodel.atom[atomsread]
+			atomsread=atomsread+1
+			print "reeeaddd", atomsread
 			if atomsread==atoms:
 				rcoords=False
 				atomsread=0
@@ -127,29 +131,32 @@ def get_go_output(proc):
 					rbfactors=True
 				if info["SS"]:
 					rss=True
-				continue
+			continue
 		#In many cases this part will not be needed
-		if rbfactors:
+		if "Bfactors" in v:
 			print "YAYAYAYAYA"
 			bf=json.loads(v)
-			vmodel.atom[atomsread].b=bf
-			++atomsread
-			if atomsread==atoms:
+			vmodel.atom[atomsread].b=bf["Bfactors"]
+			atomsread=atomsread+1
+			if atomsread==atoms-1:
+				atomsread=0
 				rbfactors=False
 				if info["SS"]:
 					rss=True
-				continue
+			continue
 		#This one should be needed only seldomly
-		if rss:
+		if "SS" in v:
 			print "yey"
 			SS=json.loads(v)
-			vmodel.atom[atomsread].ss=SS
+			vmodel.atom[atomsread].ss=SS["SS"]
 			++atomsread
-			if atomsread==atoms:
+			if atomsread==atoms-1:
+				atomsread=0
 				rss=False
+			continue
 		print "me fui con una deuda"
 		break
-	print "que chachu"
+	print "ATOMS!", len(vmodel.atom),atoms, atomsread, vmodel.atom[-1].coord, vmodel.atom[-2].coord, vmodel.atom[-1] 
 	return vmodel, info
 
 
