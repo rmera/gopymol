@@ -57,18 +57,18 @@ func main() {
 	}
 	coords := coordarray[0]
 	resid, chains := GetResidueIds(mol)
-	fmt.Println("resid, chains", resid, chains)
+//	fmt.Println("resid, chains", resid, chains)
 	list := chem.CutAlphaRef(mol, chains, resid)
-	fmt.Println("list")
+//	fmt.Println("list")
 	optcoords := chem.ZeroVecs(len(list))
 	optcoords.SomeVecs(coords, list)
 	optatoms, _ := chem.MakeTopology(nil, options.IntOptions[0][0], options.IntOptions[0][1]-1) //the last 2 options are charge and multiplicity
 	optatoms.SomeAtoms(mol, list)
-	fmt.Println("lens!", optatoms.Len(), optcoords.NumVec())
+//	fmt.Println("lens!", optatoms.Len(), optcoords.NumVec())
 	frozen := make([]int, 0, 2*len(list))
 	for i := 0; i < optatoms.Len(); i++ {
 		curr := optatoms.Atom(i)
-		if curr.Name == "HA" || curr.Name == "CA" {
+		if curr.Name == "HA" || curr.Name == "CA" || curr.Name == "CB" {
 			frozen = append(frozen, i)
 		}
 	}
@@ -96,7 +96,7 @@ func main() {
 		log.Fatal(err2.Error())
 	}
 	chem.XYZWrite("opti.xyz", optatoms, newcoords)
-	coords.SetVecs(optcoords, list)
+	coords.SetVecs(newcoords, list)
 	//Start transfering data back
 	info := new(chem.JSONInfo)
 	info.Molecules = 1

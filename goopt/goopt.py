@@ -53,7 +53,7 @@ def jsoner(sel):
 	q1=cmd.get_model(sel)
 	lens.append(len(q1.atom))
 	states.append(1)
-	proc = Popen("goopt", shell=True, stdin=PIPE)
+	proc = Popen("goopt", shell=True, stdin=PIPE,stdout=PIPE)
 	charge=-1       #in the future these 2 can be read from the plugin meny
 	multiplicity=1
 	options=json.dumps({"SelNames":[sel],"AtomsPerSel":lens,"StatesPerSel":states,"IntOptions":[[charge,multiplicity]]}) 
@@ -65,22 +65,23 @@ def jsoner(sel):
 	proc.stdin.close()
 	if  proc.wait() != 1:
 		print "There were some errors"
+	
 #	for j in proc.stderr:
 #		print(json.loads(j))a
 #	proc.stderr.close()	
 #	for i in proc.stdout:
 #		print json.loads(i)
-#	mod, info=get_go_output(proc)
+	mod, info=get_go_coords(proc,q1,["CA","HA","HA2","HA3", "O","N","H","C"],False)
 #	print "exit!!"
 #	con=mod.convert_to_connected()
-#	cmd.load_model(con,sel+"_H",discrete=1,zoom=1)
+	cmd.load_model(mod,sel+"_H",discrete=1,zoom=1)
 
 
 
 
 
 #parses the json output from go. Just copypaste it in your plugin.
-def get_go_coords(proc,model,names):
+def get_go_coords(proc,model,names,included):
 	atoms=len(model.atom)
 	atomsread=0
 	ratoms=False
@@ -93,6 +94,7 @@ def get_go_coords(proc,model,names):
 		print "VVV", v
 		print "LULA LULA LULA", first, ratoms, rcoords
 		if first:
+			print "first!"
 			first=False
 			info=json.loads(v)
 			atoms=info["AtomsPerMolecule"][0]
@@ -102,12 +104,12 @@ def get_go_coords(proc,model,names):
 		if "Coords" in v and not "Molname" in v:
 			print "yuy"
 			coords=json.loads(v)
-			if include:
-				if model.atom[atomsread].name in indexes:
-					model.atom[atomsread].coord=coords[atomsread]
+			if included:
+				if model.atom[atomsread].name in names:
+					model.atom[atomsread].coord=coords["Coords"]
 			else:
-				if not model.atom[atomsread].name in indexes:
-					model.atom[atomsread].coord=coords[atomsread]
+				if not model.atom[atomsread].name in names:
+					model.atom[atomsread].coord=coords["Coords"]
 			atomsread=atomsread+1
 			if atomsread==atoms:
 				rcoords=False
@@ -121,7 +123,7 @@ def get_go_coords(proc,model,names):
 		if "Bfactors" in v:
 			print "YAYAYAYAYA"
 			bf=json.loads(v)
-			vmodel.atom[atomsread].b=bf["Bfactors"]
+			model.atom[atomsread].b=bf["Bfactors"]
 			atomsread=atomsread+1
 			if atomsread==atoms-1:
 				atomsread=0
@@ -133,15 +135,16 @@ def get_go_coords(proc,model,names):
 		if "SS" in v:
 			print "yey"
 			SS=json.loads(v)
-			vmodel.atom[atomsread].ss=SS["SS"]
+			model.atom[atomsread].ss=SS["SS"]
 			++atomsread
 			if atomsread==atoms-1:
 				atomsread=0
 				rss=False
 			continue
+		break
 		print "me fui con una deuda"
-	print "ATOMS!", len(vmodel.atom),atoms, atomsread, vmodel.atom[-1].coord, vmodel.atom[-2].coord, vmodel.atom[-1] 
-	return vmodel, info
+	print "ATOMS!", len(model.atom),atoms, atomsread, model.atom[-1].coord, model.atom[-2].coord, model.atom[-1] 
+	return model, info
 
 
 
