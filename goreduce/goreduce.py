@@ -42,6 +42,7 @@ import tkMessageBox
 import json
 from subprocess import Popen, PIPE
 import array
+import gochem
 
 		
 
@@ -57,7 +58,7 @@ def jsoner(sel):
 	options=json.dumps({"SelNames":[sel],"AtomsPerSel":lens,"StatesPerSel":states})  #, "IntOptions":[[5, 11]] })
 	proc.stdin.write(options+"\n")
 	for i in q1.atom:
-		atom,coords=Atom2gcRef(i)
+		atom,coords=gochem.Atom2gcRef(i)
 		proc.stdin.write(atom+"\n")
 		proc.stdin.write(coords+"\n")
 	proc.stdin.close()
@@ -68,120 +69,13 @@ def jsoner(sel):
 #	proc.stderr.close()	
 #	for i in proc.stdout:
 #		print json.loads(i)
-	mod, info=get_go_output(proc)
+	mod, info=gochem.get_gochem_newmodel(proc)
 	print "exit!!"
 	con=mod.convert_to_connected()
 	cmd.load_model(con,sel+"_H",discrete=1,zoom=1)
 
 
 
-
-
-#parses the json output from go. Just copypaste it in your plugin.
-def get_go_output(proc):
-	vmodel=Indexed()
-	atoms=0
-	atomsread=0
-	ratoms=False
-	rcoords=False
-	rbfactors=False
-	rss=False
-	first=True
-	while(True):
-		v=proc.stdout.readline()
-		print "VVV", v
-		print "LULA LULA LULA", first, ratoms, rcoords
-		if first:
-			first=False
-			info=json.loads(v)
-			atoms=info["AtomsPerMolecule"][0]
-			ratoms=True
-			print "LALA"
-			continue
-		if "Molname" in v:
-			print "YAY", atoms, atomsread, v
-			ad=json.loads(v)
-#			print "v atom", json.loads(v)
-			at=Atom()
-			at.name=ad["Name"]
-			at.symbol=ad["Symbol"]
-			at.chain=ad["Chain"]
-			at.id=ad["Id"]
-			at.resi_number=ad["Molid"]
-			at.resn=ad["Molname"]
-			vmodel.atom.append(at)
-			atomsread=atomsread+1
-			if atomsread==atoms-1:
-				ratoms=False
-				r=True
-				atomsread=0
-			continue
-		if "Coords" in v and not "Molname" in v:
-			print "yuy"
-			coords=json.loads(v)
-			print "coords!!", coords["Coords"], atomsread
-			vmodel.atom[atomsread].coord=coords["Coords"]
-			print "coords in mol!", vmodel.atom[atomsread]
-			atomsread=atomsread+1
-			print "reeeaddd", atomsread
-			if atomsread==atoms:
-				rcoords=False
-				atomsread=0
-				if  info["Bfactors"]:
-					rbfactors=True
-				if info["SS"]:
-					rss=True
-			continue
-		#In many cases this part will not be needed
-		if "Bfactors" in v:
-			print "YAYAYAYAYA"
-			bf=json.loads(v)
-			vmodel.atom[atomsread].b=bf["Bfactors"]
-			atomsread=atomsread+1
-			if atomsread==atoms-1:
-				atomsread=0
-				rbfactors=False
-				if info["SS"]:
-					rss=True
-			continue
-		#This one should be needed only seldomly
-		if "SS" in v:
-			print "yey"
-			SS=json.loads(v)
-			vmodel.atom[atomsread].ss=SS["SS"]
-			++atomsread
-			if atomsread==atoms-1:
-				atomsread=0
-				rss=False
-			continue
-		print "me fui con una deuda"
-		break
-	print "ATOMS!", len(vmodel.atom),atoms, atomsread, vmodel.atom[-1].coord, vmodel.atom[-2].coord, vmodel.atom[-1] 
-	return vmodel, info
-
-
-
-
-
-
-
-
-
-
-			
-	#some errors maybe just warnings
-#	for i in proc.stderr:
-#		try:
-#			print json.loads(i)
-#		except:
-#			print i
-#
-		
-
-def Atom2gcRef(i):
-	Ref=json.dumps({"Name":i.name,"Id":i.id,"Molname":i.resn,"Symbol":i.symbol,"Molid":int(i.resi_number),"Chain":i.chain})
-	coords=json.dumps({"Coords":i.coord})
-	return Ref,coords
 	
 
 

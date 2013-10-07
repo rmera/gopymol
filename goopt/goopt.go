@@ -62,7 +62,7 @@ func main() {
 //	fmt.Println("list")
 	optcoords := chem.ZeroVecs(len(list))
 	optcoords.SomeVecs(coords, list)
-	optatoms, _ := chem.MakeTopology(nil, options.IntOptions[0][0], options.IntOptions[0][1]-1) //the last 2 options are charge and multiplicity
+	optatoms, _ := chem.NewTopology(nil, options.IntOptions[0][0], options.IntOptions[0][1]-1) //the last 2 options are charge and multiplicity
 	optatoms.SomeAtoms(mol, list)
 //	fmt.Println("lens!", optatoms.Len(), optcoords.NumVec())
 	frozen := make([]int, 0, 2*len(list))
@@ -90,7 +90,9 @@ func main() {
 	}
 	QM.SetName(options.SelNames[0])
 	QM.BuildInput(optatoms, optcoords, calc)
-	QM.Run(true) //wait for the result
+	if err2:=QM.Run(true); err!=nil{
+		log.Fatal(err2.Error())
+	}
 	newcoords, err2 := QM.GetGeometry(optatoms)
 	if err2 != nil {
 		log.Fatal(err2.Error())
@@ -108,7 +110,7 @@ func main() {
 	}
 	//	fmt.Fprint(os.Stdout,mar)
 	//	fmt.Fprint(os.Stdout,"\n")
-	if err := chem.TransmitMoleculeJSON(nil, []*chem.CoordMatrix{coords}, nil, nil, os.Stdout); err2 != nil {
+	if err := chem.TransmitMoleculeJSON(nil, []*chem.VecMatrix{coords}, nil, nil, os.Stdout); err2 != nil {
 		fmt.Fprint(os.Stderr, err)
 		log.Fatal(err)
 	}

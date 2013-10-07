@@ -39,10 +39,10 @@ from chempy import Bond, Atom
 from pymol import cmd
 import tkSimpleDialog
 import tkMessageBox
-import json
 from subprocess import Popen, PIPE
 import array
-
+import gochem
+import json
 		
 
 
@@ -59,105 +59,17 @@ def jsoner(sel):
 	options=json.dumps({"SelNames":[sel],"AtomsPerSel":lens,"StatesPerSel":states,"IntOptions":[[charge,multiplicity]]}) 
 	proc.stdin.write(options+"\n")
 	for i in q1.atom:
-		atom,coords=Atom2gcRef(i)
+		atom,coords=gochem.Atom2gcRef(i)
 		proc.stdin.write(atom+"\n")
 		proc.stdin.write(coords+"\n")
 	proc.stdin.close()
 	if  proc.wait() != 1:
 		print "There were some errors"
-	
-#	for j in proc.stderr:
-#		print(json.loads(j))a
-#	proc.stderr.close()	
-#	for i in proc.stdout:
-#		print json.loads(i)
-	mod, info=get_go_coords(proc,q1,["CA","HA","HA2","HA3", "O","N","H","C"],False)
-#	print "exit!!"
-#	con=mod.convert_to_connected()
+	mod, info=gochem.get_gochem(proc,q1,["CA","HA","HA2","HA3", "O","N","H","C"],False)
 	cmd.load_model(mod,sel+"_H",discrete=1,zoom=1)
 
 
 
-
-
-#parses the json output from go. Just copypaste it in your plugin.
-def get_go_coords(proc,model,names,included):
-	atoms=len(model.atom)
-	atomsread=0
-	ratoms=False
-	rcoords=False
-	rbfactors=False
-	rss=False
-	first=True
-	while(True):
-		v=proc.stdout.readline()
-		print "VVV", v
-		print "LULA LULA LULA", first, ratoms, rcoords
-		if first:
-			print "first!"
-			first=False
-			info=json.loads(v)
-			atoms=info["AtomsPerMolecule"][0]
-			ratoms=True
-			print "LALA"
-			continue
-		if "Coords" in v and not "Molname" in v:
-			print "yuy"
-			coords=json.loads(v)
-			if included:
-				if model.atom[atomsread].name in names:
-					model.atom[atomsread].coord=coords["Coords"]
-			else:
-				if not model.atom[atomsread].name in names:
-					model.atom[atomsread].coord=coords["Coords"]
-			atomsread=atomsread+1
-			if atomsread==atoms:
-				rcoords=False
-				atomsread=0
-				if  info["Bfactors"]:
-					rbfactors=True
-				if info["SS"]:
-					rss=True
-			continue
-		#In many cases this part will not be needed
-		if "Bfactors" in v:
-			print "YAYAYAYAYA"
-			bf=json.loads(v)
-			model.atom[atomsread].b=bf["Bfactors"]
-			atomsread=atomsread+1
-			if atomsread==atoms-1:
-				atomsread=0
-				rbfactors=False
-				if info["SS"]:
-					rss=True
-			continue
-		#This one should be needed only seldomly
-		if "SS" in v:
-			print "yey"
-			SS=json.loads(v)
-			model.atom[atomsread].ss=SS["SS"]
-			++atomsread
-			if atomsread==atoms-1:
-				atomsread=0
-				rss=False
-			continue
-		break
-		print "me fui con una deuda"
-	print "ATOMS!", len(model.atom),atoms, atomsread, model.atom[-1].coord, model.atom[-2].coord, model.atom[-1] 
-	return model, info
-
-
-
-
-
-
-
-
-def Atom2gcRef(i):
-	Ref=json.dumps({"Name":i.name,"Id":i.id,"Molname":i.resn,"Symbol":i.symbol,"Molid":int(i.resi_number),"Chain":i.chain})
-	coords=json.dumps({"Coords":i.coord})
-	return Ref,coords
-	
 
 
 #The Tk interface (I know that  the interface is awful, but I have no time to study Tk at present)

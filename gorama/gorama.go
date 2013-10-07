@@ -47,18 +47,18 @@ import (
 func main() {
 	//This is the part that collects all the data from PyMOL, with all  the proper error checking.
 	stdin := bufio.NewReader(os.Stdin)
-	options, err := chem.DecodeJSONOptions(stdin)
-	if err != nil {
-		fmt.Fprint(os.Stderr, err.Marshal())
-		log.Fatal(err)
+	options, errj := chem.DecodeJSONOptions(stdin)
+	if errj != nil {
+		fmt.Fprint(os.Stderr, errj.Marshal())
+		log.Fatal(errj)
 	}
 	mols := make([]*chem.Topology, 0, len(options.SelNames))
-	coordset := make([]*chem.CoordMatrix, 0, len(options.SelNames))
+	coordset := make([]*chem.VecMatrix, 0, len(options.SelNames))
 	for k, _ := range options.SelNames {
-		mol, coords, err := chem.DecodeJSONMolecule(stdin, options.AtomsPerSel[k],1)
-		if err != nil {
-			fmt.Fprint(os.Stderr, err.Marshal())
-			log.Fatal(err)
+		mol, coords, errj := chem.DecodeJSONMolecule(stdin, options.AtomsPerSel[k],1)
+		if errj != nil {
+			fmt.Fprint(os.Stderr, errj.Marshal())
+			log.Fatal(errj)
 		}
 		mols = append(mols, mol)
 		coordset = append(coordset, coords[0])
@@ -69,18 +69,18 @@ func main() {
 	var HL []int
 	for k, mol := range mols {
 
-		fmt.Println("len in go", mol.Len(), coordset[k].NumVec()) //////
+		fmt.Println("len in go", mol.Len(), coordset[k].NVecs()) //////
 		HL = []int{}
 		oldres1 := mol.Atom(0).Molid + 1 //the residues should be contiguous!!!
 		chem.FixNumbering(mol)
-		ramalist, err := chem.RamaList(mol, "ABC DEFGHI", []int{0, -1}) ////
-		if err != nil {
-			log.Fatal(err)
+		ramalist, errj := chem.RamaList(mol, "ABC DEFGHI", []int{0, -1}) ////
+		if errj != nil {
+			log.Fatal(errj)
 		}
 		ramalist2, index := chem.RamaResidueFilter(ramalist, options.StringOptions[0], false)
-		rama, err := chem.RamaCalc(coordset[k], ramalist2)
-		if err != nil {
-			log.Fatal(err)
+		rama, errj := chem.RamaCalc(coordset[k], ramalist2)
+		if errj != nil {
+			log.Fatal(errj)
 		}
 		ramadata = append(ramadata, rama)
 		var i int
@@ -96,6 +96,7 @@ func main() {
 		}
 	}
 	name := append(options.SelNames, "Rama")
+	var err error
 	if len(ramadata) == 1 {
 		err = chem.RamaPlot(ramadata[0], HL, "Ramachandran plot", strings.Join(name, "_"))
 	} else {
