@@ -43,7 +43,8 @@ from subprocess import Popen, PIPE
 import array
 import gochem
 import json
-		
+import Tkinter
+import Pmw
 
 
 #Reads a selection, cuts the Ca--CO and N--Ca bonds, replaces CO and N with nitrogens, 
@@ -80,8 +81,27 @@ def goOptDialog(app):
 	sel = tkSimpleDialog.askstring("goOpt",
                                        'Enter the selection to optimize',
                                        parent=app.root)
+    
+	self.dialog = Pmw.SelectionDialog(app.root,
+	    title = 'selectiondialog',
+	    buttons = ('OK', 'Cancel'),
+	    defaultbutton = 'OK',
+	    scrolledlist_labelpos = 'n',
+	    label_text = 'Select a QM program',
+	    scrolledlist_items = ('Orca','Turbomole','Mopac'),
+		command = None,
+     )
+	self.dialog.withdraw()
+	self.dialog.pack(fill = 'both', expand=1, padx=5, pady=5)
+	self.dialog.deactivate()
+
+	# Create button to launch the dialog.
+	w = Tkinter.Button(parent, text = 'Show QM software selecion dialog',
+         command = self.dialog.activate)
+	w.pack(padx = 8, pady = 8)
 	jsoner(sel)
- 
+
+
 def __init__(self):
 	self.menuBar.addmenuitem('Plugin', 'command',
                              'goOpt',
