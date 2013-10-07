@@ -2,19 +2,55 @@
 The GUI for this program is based on that of Optimize, by Osvaldo Martin.  (http://www.pymolwiki.org/index.php/optimize)
 License: GNU General Public License
 '''
-import Tkinter
+
+from chempy.models import Indexed
+from chempy import Bond, Atom
+from pymol import cmd
+from subprocess import Popen, PIPE
+import array
+import gochem
+import json
 from Tkinter import *
 import Pmw
-from pymol import cmd
+
+
+#Reads a selection, cuts the Ca--CO and N--Ca bonds, replaces CO and N with nitrogens, 
+def goQM(selside="all",selbb="",qmprogram="MOPAC2012",method="Cheap", calctype="Optimization",dielectric="-1", charge=0,multiplicity=1):
+	lens=[]
+	states=[]
+	q1=[]
+	q1.append(cmd.get_model(selside))
+	lens.append(len(q1[0].atom))
+	states.append(1)
+	bb=selbb.split(",")
+	for i in bb:
+		q1.append(gmd.get_model(i))
+		lens.append(len(q1[-1].atoms))
+		states.append(1)
+	bb.insert(0,selside)
+	proc = Popen("goopt", shell=True, stdin=PIPE,stdout=PIPE)
+	options=json.dumps({"SelNames":bb,"AtomsPerSel":lens,"StatesPerSel":states,"IntOptions":[[int(charge),int(multiplicity)]],"FloatOptions":[[float(dielectric)]],"StringOptions":[[qmprogram,method, calctype]]}) 
+	proc.stdin.write(options+"\n")
+	for i in q1.atom:
+		atom,coords=gochem.Atom2gcRef(i)
+		proc.stdin.write(atom+"\n")
+		proc.stdin.write(coords+"\n")
+	proc.stdin.close()
+	if  proc.wait() != 1:
+		print "There were some errors"
+	mod, info=gochem.get_gochem(proc,q1,["CA","HA","HA2","HA3", "O","N","H","C"],False)
+	cmd.load_model(mod,sel+"_H",discrete=1,zoom=1)
+
 
 def mainDialog():
     """ Creates the GUI """
     global entry_vdw, entry_elec
-    def set_minimize():
+    def set_goQM():
         qmprogram = qmprog_value.get()
         method = method_value.get()
-        selection = sel_value.get()
-        minimize(selection, forcefield, method, nsteps, conv, cutoff, cut_vdw, cut_elec)
+        calctype = calc_value.get()
+
+        goQM(selside, selbb, qmprogram, method, calctype, dielectric, charge, multiplicity)
 
     master = Tk()
     master.title(' goOptGUI ')
@@ -53,19 +89,19 @@ def mainDialog():
                 menubutton_width = 15,
         ).grid(row=1, columnspan=2)
 # Type of Calculations
-    method_value = StringVar(master=group.interior())
-    method_value.set('Optimization')
+    calc_value = StringVar(master=group.interior())
+    calc_value.set('Optimization')
     Pmw.OptionMenu(group.interior(),
                 labelpos = 'w',
                 label_text = '   Calc. type  ',
-                menubutton_textvariable = method_value,
+                menubutton_textvariable = calc_value,
                 items = ['Optimization', 'Single Point'],
                 menubutton_width = 15,
         ).grid(row=2, columnspan=2)
 #
     Label(group.interior(), text='Dielectric').grid(row=3, column=0)
     dielectric = StringVar(master=group.interior())
-    dielectric.set("No dielectric")
+    dielectric.set("-1")
     entry_dielectric = Entry(group.interior(),textvariable=dielectric, width=15)
     entry_dielectric.grid(row=3, column=1)
     entry_dielectric.update()
@@ -107,11 +143,12 @@ def mainDialog():
     entry_selbb_value.update()
 
 # Run
-    Button(p1, text="Run QM calculation!", command=goQM).pack(side=BOTTOM)
+    Button(p1, text="Run QM calculation!", command=set_goQM).pack(side=BOTTOM)
 ############################ COLOR TAB ########################################
     Label(p2, text =u"""
 Dielectric: Anything that is not a 
-positive integer counts as no dielectric.
+real number equal or greater than zero counts as no 
+dielectric.
 
 SideChain Selections: Give only one selection
 that can contain several, non-contiguous residues.
