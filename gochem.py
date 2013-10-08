@@ -39,32 +39,28 @@ from chempy import Bond, Atom
 from pymol import cmd
 import json
 
-#Replaces the coordinates, secondary structure and b-factor of some selected atoms in model for the ones obtained from a Gochem program whose process object is proc. 
-#Proc is the Gochem process object,
-#model is the original model on which the gochem program operated. Names are the names of atoms whose coordinates will or will not be changed for the
-#Gochem program's output. include determines whether the names in names are or not replaced in the original object. In addition to the modified object, it returns a
-#dictionary with information returned by the go program
-def get_gochem(proc,model,names,included):
-	atoms=len(model.atom)
+
+
+#returns dictionary with information returned by the go program
+def get_info(proc):
+	first=False
+	info=json.loads(proc.stdout.readline())
+	return info
+
+
+#puts coordinates returned by the go program into the model model. Coordinates of atom with names in the 
+#list name are the only one replaced, or the ones not replaced depending on whether included is True.
+#proc is the process object for the go program, atom is the lenght of the model.
+def get_coords(proc,model,names,included,info,number):
 	atomsread=0
-	ratoms=False
-	rcoords=False
+	atom=info["AtomsPerMolecule"][number]
+	rcoords=True
 	rbfactors=False
 	rss=False
 	first=True
 	while(True):
 		v=proc.stdout.readline()
-#		print "VVV", v
-#		print "LULA LULA LULA", first, ratoms, rcoords
-		if first:
-			print "first!"
-			first=False
-			info=json.loads(v)
-			atoms=info["AtomsPerMolecule"][0]
-			ratoms=True
-#			print "LALA"
-			continue
-		if "Coords" in v and not "Molname" in v:
+		if "Coords" in v and not "Molname" in v and rcoords:
 #			print "yuy"
 			coords=json.loads(v)
 			if included:
@@ -83,7 +79,7 @@ def get_gochem(proc,model,names,included):
 					rss=True
 			continue
 		#In many cases this part will not be needed
-		if "Bfactors" in v:
+		if "Bfactors" in v and rbfactors:
 #			print "YAYAYAYAYA"
 			bf=json.loads(v)
 			model.atom[atomsread].b=bf["Bfactors"]
@@ -95,7 +91,7 @@ def get_gochem(proc,model,names,included):
 					rss=True
 			continue
 		#This one should be needed only seldomly
-		if "SS" in v:
+		if "SS" in v and rss:
 #			print "yey"
 			SS=json.loads(v)
 			model.atom[atomsread].ss=SS["SS"]
@@ -107,32 +103,26 @@ def get_gochem(proc,model,names,included):
 		break
 #		print "me fui con una deuda de 500"
 #	print "ATOMS!", len(model.atom),atoms, atomsread, model.atom[-1].coord, model.atom[-2].coord, model.atom[-1] 
-	return model, info
+	return model
 
 
 
 #similar to get_gochem but it doesnt take a reference model, hence, all the data is taken from the output of the go program.
-#Proc is the gochem process object.
-#Notice that at this point, PyMOL will NOT guess bonds for objects created with this functions, so lines, sticks, cartoons representations
+#Proc is the gochem process object, atoms is the number of atoms that should be added.
+#Notice that PyMOL 1.6 will NOT guess bonds for objects created with these functions, so lines, sticks, cartoons representations
 #willl be NOT available. 
-def get_gochem_newmodel(proc):
+def get_model(proc, info,number):
 	vmodel=Indexed()
-	atoms=0
+	atoms=info["AtomsPerMolecule"][number]
 	atomsread=0
-	ratoms=False
+	ratoms=True
 	rcoords=False
 	rbfactors=False
 	rss=False
 	first=True
 	while(True):
 		v=proc.stdout.readline()
-		if first:
-			first=False
-			info=json.loads(v)
-			atoms=info["AtomsPerMolecule"][0]
-			ratoms=True
-			continue
-		if "Molname" in v:
+		if "Molname" in v and ratom:
 #			print "YAY", atoms, atomsread, v
 			ad=json.loads(v)
 #			print "v atom", json.loads(v)
@@ -150,8 +140,6 @@ def get_gochem_newmodel(proc):
 				rcoords=True
 				atomsread=0
 			continue
-		if "Coords" in v and not "Molname" in v:
-			print "veeeeee", v
 		if "Coords" in v and not "Molname" in v and rcoords:
 #			print "yuy"
 			coords=json.loads(v)
@@ -193,7 +181,7 @@ def get_gochem_newmodel(proc):
 #		print "me fui con una deuda de 500"
 		break
 #	print "ATOMS!", len(vmodel.atom),atoms, atomsread, vmodel.atom[-1].coord, vmodel.atom[-2].coord, vmodel.atom[-1] 
-	return vmodel, info
+	return vmodel
 
 
 

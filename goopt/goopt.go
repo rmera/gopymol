@@ -37,6 +37,7 @@ import (
 	"github.com/rmera/scu"
 	"log"
 	"os"
+	"runtime"
 )
 
 //For most plugins you dont really need to report errors like this, just panicking or using log.fatal should be enough.
@@ -50,6 +51,12 @@ func main() {
 		fmt.Fprint(os.Stderr, err.Marshal())
 		log.Fatal(err)
 	}
+	dielectric := options.FloatOptions[0][0]
+	charge := options.IntOptions[0][0]
+	multi := options.IntOptions[0][1]
+	qmprogram:=options.StringOptions[0][0]
+	method:=options.StringOptions[0][1]
+	calctype:=options.StringOptions[0][2]
 	mol, coordarray, err := chem.DecodeJSONMolecule(stdin, options.AtomsPerSel[0], 1)
 	if err != nil {
 		fmt.Fprint(os.Stderr, err.Marshal())
@@ -57,14 +64,16 @@ func main() {
 	}
 	coords := coordarray[0]
 	resid, chains := GetResidueIds(mol)
-//	fmt.Println("resid, chains", resid, chains)
+	//	fmt.Println("resid, chains", resid, chains)
 	list := chem.CutAlphaRef(mol, chains, resid)
-//	fmt.Println("list")
+	fmt.Fprintln(os.Stderr,"list", list)
 	optcoords := chem.ZeroVecs(len(list))
 	optcoords.SomeVecs(coords, list)
-	optatoms, _ := chem.NewTopology(nil, options.IntOptions[0][0], options.IntOptions[0][1]-1) //the last 2 options are charge and multiplicity
+	optatoms, _ := chem.NewTopology(nil, charge, multi) //the last 2 options are charge and multiplicity
 	optatoms.SomeAtoms(mol, list)
-//	fmt.Println("lens!", optatoms.Len(), optcoords.NumVec())
+	chem.ScaleBonds(optcoords,optatoms,"CA","HA2",chem.CHDist)
+	chem.ScaleBonds(optcoords,optatoms,"CA","HA3",chem.CHDist)
+	//	fmt.Println("lens!", optatoms.Len(), optcoords.NumVec())
 	frozen := make([]int, 0, 2*len(list))
 	for i := 0; i < optatoms.Len(); i++ {
 		curr := optatoms.Atom(i)
@@ -72,31 +81,63 @@ func main() {
 			frozen = append(frozen, i)
 		}
 	}
+	chem.PDBWrite("OPT.pdb", optatoms,optcoords,nil) /////////////////////////////////////
 	//Now we set the calculation. Lets just start with mopac.
-	qmprogram := "mopac" //this is so we can easily add more program options later
 	calc := new(chem.QMCalc)
+	if calctype=="Optimization"{
+		calc.Optimize=true
+	}
 	calc.RI = true //some options, including this one, are meaningless for MOPAC
 	calc.CConstraints = frozen
-	calc.Optimize = true
-	calc.Dielectric = 4
-	calc.SCFTightness = 2
+	calc.Dielectric = dielectric
+	calc.SCFTightness = 1
 	calc.Disperssion = "D3"
-	calc.Method = "XXXX"
+	calc.Method="TPSS"
+	if method == "Cheap" {
+		calc.BSSE="gcp"
+		if qmprogram=="ORCA"{
+			calc.Method="HF-3c"
+			calc.RI = false
+		}else{
+			calc.Basis = "def2-SVP" 
+		}
+	} else {
+		calc.Basis = "def2-TZVP"
+	}
 	//We will use the default methods and basis sets of each program. In the case of MOPAC, that is currently PM6-D3H4.
 	var QM chem.QMRunner
 	switch qmprogram {
+	case "ORCA":
+		QM= chem.QMRunner(chem.MakeOrcaRunner())
+		QM.SetnCPU(runtime.NumCPU())
+	case "TURBOMOLE":
+		QM=chem.QMRunner(chem.MakeTMRunner())
 	default:
 		QM = chem.QMRunner(chem.MakeMopacRunner())
 	}
+
 	QM.SetName(options.SelNames[0])
 	QM.BuildInput(optatoms, optcoords, calc)
-	if err2:=QM.Run(true); err!=nil{
+	if err2 := QM.Run(true); err != nil {
 		log.Fatal(err2.Error())
 	}
-	newcoords, err2 := QM.GetGeometry(optatoms)
-	if err2 != nil {
+	var newcoords *chem.VecMatrix
+	var err2 error
+	if calc.Optimize{
+		newcoords, err2 = QM.GetGeometry(optatoms)
+		if err2 != nil {
+			log.Fatal(err2.Error())
+		}
+	}else{
+		newcoords=nil
+	}
+
+	fmt.Fprint(os.Stderr, "noooooaaaaaaaaaaaaaaaaaaaaaaaaaooooooo")
+	energy,err2:=QM.GetEnergy()
+	if err2!=nil{
 		log.Fatal(err2.Error())
 	}
+	fmt.Fprint(os.Stderr, "noooooooooooooooooooooooooooooo")
 	chem.XYZWrite("opti.xyz", optatoms, newcoords)
 	coords.SetVecs(newcoords, list)
 	//Start transfering data back
@@ -104,6 +145,7 @@ func main() {
 	info.Molecules = 1
 	info.FramesPerMolecule = []int{1}
 	info.AtomsPerMolecule = []int{mol.Len()}
+	info.Energies=[]float64{energy}
 	if err2 := info.Send(os.Stdout); err2 != nil {
 		fmt.Fprint(os.Stderr, err2)
 		log.Fatal(err2)

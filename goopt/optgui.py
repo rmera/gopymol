@@ -15,53 +15,62 @@ import Pmw
 
 
 #Reads a selection, cuts the Ca--CO and N--Ca bonds, replaces CO and N with nitrogens, 
-def goQM(selside="all",selbb="",qmprogram="MOPAC2012",method="Cheap", calctype="Optimization",dielectric="-1", charge=0,multiplicity=1):
+def goQM(selside="sele",selbb="",qmprogram="MOPAC2012",method="Cheap", calctype="Optimization",dielectric="-1", charge=0,multiplicity=1):
 	lens=[]
 	states=[]
 	q1=[]
-	q1.append(cmd.get_model(selside))
+	print selside ##################3
+	m=cmd.get_model(selside)
+	q1.append(m)
 	lens.append(len(q1[0].atom))
 	states.append(1)
 	bb=selbb.split(",")
 	for i in bb:
-		q1.append(gmd.get_model(i))
+		if i=="":
+			continue
+		q1.append(cmd.get_model(i))
 		lens.append(len(q1[-1].atoms))
 		states.append(1)
 	bb.insert(0,selside)
 	proc = Popen("goopt", shell=True, stdin=PIPE,stdout=PIPE)
 	options=json.dumps({"SelNames":bb,"AtomsPerSel":lens,"StatesPerSel":states,"IntOptions":[[int(charge),int(multiplicity)]],"FloatOptions":[[float(dielectric)]],"StringOptions":[[qmprogram,method, calctype]]}) 
 	proc.stdin.write(options+"\n")
-	for i in q1.atom:
-		atom,coords=gochem.Atom2gcRef(i)
-		proc.stdin.write(atom+"\n")
-		proc.stdin.write(coords+"\n")
+	for j in q1:
+		for i in j.atom:
+			atom,coords=gochem.Atom2gcRef(i)
+			proc.stdin.write(atom+"\n")
+			proc.stdin.write(coords+"\n")
 	proc.stdin.close()
 	if  proc.wait() != 1:
 		print "There were some errors"
-	mod, info=gochem.get_gochem(proc,q1,["CA","HA","HA2","HA3", "O","N","H","C"],False)
-	cmd.load_model(mod,sel+"_H",discrete=1,zoom=1)
+	print "WTF"
+	info=gochem.get_info(proc)
+	print "WTF2"
+	mod=gochem.get_coords(proc,q1[0],["CA","HA","HA2","HA3", "O","N","H","C"],False,info,0)
+	cmd.load_model(mod,selside+"_H",discrete=1,zoom=1)
+	energy=info["Energies"][0]
+	print "Final energy: ", energy, " kcal/mol"
 
 
 def mainDialog():
     """ Creates the GUI """
-    global entry_vdw, entry_elec
     def set_goQM():
         qmprogram = qmprog_value.get()
         method = method_value.get()
         calctype = calc_value.get()
-
-        goQM(selside, selbb, qmprogram, method, calctype, dielectric, charge, multiplicity)
-
+        sidesel = selside.get()
+        bbsel = selbb.get()
+        goQM(sidesel, bbsel, qmprogram, method, calctype, dielectric.get(), charge.get(), multiplicity.get())
     master = Tk()
     master.title(' goOptGUI ')
-    w = Tkinter.Label(master, text="goQM:  Quick QM calculations\n",
+    w = Label(master, text="goQM:  Quick QM calculations\n",
                                 background = 'black',
                                 foreground = 'white')
     w.pack(expand=1, fill = 'both', padx=4, pady=4)
 ############################ NoteBook #########################################
     Pmw.initialise()
     nb = Pmw.NoteBook(master, hull_width=430, hull_height=320)
-    p1 = nb.add(' Local optimization ')
+    p1 = nb.add(' Calculation ')
     p2 = nb.add(' Help ')
     p3 = nb.add('    About   ')
     nb.pack(padx=5, pady=5, fill=BOTH, expand=1)
@@ -75,7 +84,7 @@ def mainDialog():
                 labelpos = 'w',
                 label_text = 'QM Program',
                 menubutton_textvariable = qmprog_value,
-                items = ['MOPAC2012', 'ORCA', 'Turbomole'],
+                items = ['MOPAC2012', 'ORCA', 'TURBOMOLE'],
                 menubutton_width = 15,
         ).grid(row=0, columnspan=2)
 # Method
@@ -83,7 +92,7 @@ def mainDialog():
     method_value.set('Cheap')
     Pmw.OptionMenu(group.interior(),
                 labelpos = 'w',
-                label_text = '   Method   ',
+                label_text = '   Method    ',
                 menubutton_textvariable = method_value,
                 items = ['Cheap', 'Expensive'],
                 menubutton_width = 15,
@@ -95,7 +104,7 @@ def mainDialog():
                 labelpos = 'w',
                 label_text = '   Calc. type  ',
                 menubutton_textvariable = calc_value,
-                items = ['Optimization', 'Single Point'],
+                items = ['Optimization', 'SinglePoint'],
                 menubutton_width = 15,
         ).grid(row=2, columnspan=2)
 #
@@ -124,23 +133,23 @@ def mainDialog():
     entry_multiplicity.update()
 
     Label(group.interior(), text='Side-chain selection').grid(row=9, column=0)
-    selside_value = StringVar(master=group.interior())
+    selside = StringVar(master=group.interior())
     names = cmd.get_names('all')
     if len(names) > 0:
-        selside_value.set(names[0])
+        selside.set('sele')
     else:
-        selside_value.set('all')
-    entry_selside_value = Entry(group.interior(),textvariable=selside_value, width=15)
-    entry_selside_value.grid(row=9, column=1)
-    entry_selside_value.configure(state='normal')
-    entry_selside_value.update()
+        selside.set('all')
+    entry_selside = Entry(group.interior(),textvariable=selside, width=15)
+    entry_selside.grid(row=9, column=1)
+    entry_selside.configure(state='normal')
+    entry_selside.update()
     Label(group.interior(), text='Backbone selections').grid(row=11, column=0)
-    selbb_value = StringVar(master=group.interior())
-    selbb_value.set('')
-    entry_selbb_value = Entry(group.interior(),textvariable=selbb_value, width=15)
-    entry_selbb_value.grid(row=11, column=1)
-    entry_selbb_value.configure(state='normal')
-    entry_selbb_value.update()
+    selbb = StringVar(master=group.interior())
+    selbb.set('')
+    entry_selbb = Entry(group.interior(),textvariable=selbb, width=15)
+    entry_selbb.grid(row=11, column=1)
+    entry_selbb.configure(state='normal')
+    entry_selbb.update()
 
 # Run
     Button(p1, text="Run QM calculation!", command=set_goQM).pack(side=BOTTOM)
@@ -190,6 +199,6 @@ https://www.github.com/rmera/gochem
 def __init__(self):
     """Add this Plugin to the PyMOL menu"""
     self.menuBar.addmenuitem('Plugin', 'command',
-                            'goOptGUI',
-                            label = 'goOptGUI',
+                            'goOpt',
+                            label = 'goOpt',
                             command = lambda : mainDialog())
