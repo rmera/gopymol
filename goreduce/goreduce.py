@@ -47,7 +47,6 @@ import gochem
 		
 
 	
-#This reads 2 structures, calculates RMSD for each atom in backbone and assigns that value to b-factor of the atom. It sets b-factors for all other atoms to 0
 def jsoner(sel):
 	lens=[]
 	states=[]
@@ -69,10 +68,9 @@ def jsoner(sel):
 #	proc.stderr.close()	
 #	for i in proc.stdout:
 #		print json.loads(i)
-	mod, info=gochem.get_gochem_newmodel(proc)
-	print "exit!!"
-	con=mod.convert_to_connected()
-	cmd.load_model(con,sel+"_H",discrete=1,zoom=1)
+	info = gochem.get_info(proc)
+	mod=gochem.get_model(proc,info,0)
+	cmd.load_model(mod,sel+"_H",discrete=1,zoom=1)
 
 
 

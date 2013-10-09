@@ -97,7 +97,6 @@ func main() {
 		log.Fatal(err2)
 	}
 
-	fmt.Fprint(os.Stderr,"todo se derrumbo dentro de mi dentro de mi")
 }
 
 

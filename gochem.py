@@ -53,7 +53,7 @@ def get_info(proc):
 #proc is the process object for the go program, atom is the lenght of the model.
 def get_coords(proc,model,names,included,info,number):
 	atomsread=0
-	atom=info["AtomsPerMolecule"][number]
+	atoms=info["AtomsPerMolecule"][number]
 	rcoords=True
 	rbfactors=False
 	rss=False
@@ -61,7 +61,6 @@ def get_coords(proc,model,names,included,info,number):
 	while(True):
 		v=proc.stdout.readline()
 		if "Coords" in v and not "Molname" in v and rcoords:
-#			print "yuy"
 			coords=json.loads(v)
 			if included:
 				if model.atom[atomsread].name in names:
@@ -80,7 +79,6 @@ def get_coords(proc,model,names,included,info,number):
 			continue
 		#In many cases this part will not be needed
 		if "Bfactors" in v and rbfactors:
-#			print "YAYAYAYAYA"
 			bf=json.loads(v)
 			model.atom[atomsread].b=bf["Bfactors"]
 			atomsread=atomsread+1
@@ -92,7 +90,6 @@ def get_coords(proc,model,names,included,info,number):
 			continue
 		#This one should be needed only seldomly
 		if "SS" in v and rss:
-#			print "yey"
 			SS=json.loads(v)
 			model.atom[atomsread].ss=SS["SS"]
 			++atomsread
@@ -102,7 +99,6 @@ def get_coords(proc,model,names,included,info,number):
 			continue
 		break
 #		print "me fui con una deuda de 500"
-#	print "ATOMS!", len(model.atom),atoms, atomsread, model.atom[-1].coord, model.atom[-2].coord, model.atom[-1] 
 	return model
 
 
@@ -122,10 +118,8 @@ def get_model(proc, info,number):
 	first=True
 	while(True):
 		v=proc.stdout.readline()
-		if "Molname" in v and ratom:
-#			print "YAY", atoms, atomsread, v
+		if "Molname" in v and ratoms:
 			ad=json.loads(v)
-#			print "v atom", json.loads(v)
 			at=Atom()
 			at.name=ad["Name"]
 			at.symbol=ad["Symbol"]
@@ -141,13 +135,9 @@ def get_model(proc, info,number):
 				atomsread=0
 			continue
 		if "Coords" in v and not "Molname" in v and rcoords:
-#			print "yuy"
 			coords=json.loads(v)
-#			print "coords!!", coords["Coords"], atomsread
 			vmodel.atom[atomsread].coord=coords["Coords"]
-#			print "coords in mol!", vmodel.atom[atomsread]
 			atomsread=atomsread+1
-#			print "reeeaddd", atomsread
 			if atomsread==atoms:
 				rcoords=False
 				atomsread=0
@@ -158,7 +148,6 @@ def get_model(proc, info,number):
 			continue
 		#In many cases this part will not be needed
 		if "Bfactors" in v:
-#			print "YAYAYAYAYA"
 			bf=json.loads(v)
 			vmodel.atom[atomsread].b=bf["Bfactors"]
 			atomsread=atomsread+1
@@ -170,7 +159,6 @@ def get_model(proc, info,number):
 			continue
 		#This one should be needed only seldomly
 		if "SS" in v:
-#			print "yey"
 			SS=json.loads(v)
 			vmodel.atom[atomsread].ss=SS["SS"]
 			++atomsread
@@ -180,7 +168,6 @@ def get_model(proc, info,number):
 			continue
 #		print "me fui con una deuda de 500"
 		break
-#	print "ATOMS!", len(vmodel.atom),atoms, atomsread, vmodel.atom[-1].coord, vmodel.atom[-2].coord, vmodel.atom[-1] 
 	return vmodel
 
 
