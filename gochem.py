@@ -129,7 +129,7 @@ def get_model(proc, info,number):
 			at.resn=ad["Molname"]
 			vmodel.atom.append(at)
 			atomsread=atomsread+1
-			if atomsread==atoms-1:
+			if atomsread==atoms:
 				ratoms=False
 				rcoords=True
 				atomsread=0
@@ -151,7 +151,7 @@ def get_model(proc, info,number):
 			bf=json.loads(v)
 			vmodel.atom[atomsread].b=bf["Bfactors"]
 			atomsread=atomsread+1
-			if atomsread==atoms-1:
+			if atomsread==atoms:
 				atomsread=0
 				rbfactors=False
 				if info["SS"]:
@@ -162,7 +162,7 @@ def get_model(proc, info,number):
 			SS=json.loads(v)
 			vmodel.atom[atomsread].ss=SS["SS"]
 			++atomsread
-			if atomsread==atoms-1:
+			if atomsread==atoms:
 				atomsread=0
 				rss=False
 			continue

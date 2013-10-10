@@ -71,8 +71,7 @@ def jsoner(sel):
 	info = gochem.get_info(proc)
 	mod=gochem.get_model(proc,info,0)
 	cmd.load_model(mod,sel+"_H",discrete=1,zoom=1)
-
-
+	print "Jumalauta y wea"
 
 	
 
