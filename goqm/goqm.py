@@ -198,6 +198,6 @@ https://www.github.com/rmera/gochem
 def __init__(self):
     """Add this Plugin to the PyMOL menu"""
     self.menuBar.addmenuitem('Plugin', 'command',
-                            'goOpt',
-                            label = 'goOpt',
+                            'goQM',
+                            label = 'goQM',
                             command = lambda : mainDialog())
