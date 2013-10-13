@@ -96,7 +96,9 @@ func main() {
 		if qmprogram=="ORCA"{
 			calc.Method="HF-3c"
 			calc.RI = false
-		}else{
+		}else if qmprogram=="MOPAC2012"{
+			calc.Method="PM6-D3H4 MOZYME"
+		}else {
 			calc.Basis = "def2-SVP" 
 		}
 	} else {
@@ -106,12 +108,12 @@ func main() {
 	var QM chem.QMRunner
 	switch qmprogram {
 	case "ORCA":
-		QM= chem.QMRunner(chem.MakeOrcaRunner())
+		QM= chem.QMRunner(chem.NewOrcaRunner())
 		QM.SetnCPU(runtime.NumCPU())
 	case "TURBOMOLE":
-		QM=chem.QMRunner(chem.MakeTMRunner())
+		QM=chem.QMRunner(chem.NewTMRunner())
 	default:
-		QM = chem.QMRunner(chem.MakeMopacRunner())
+		QM = chem.QMRunner(chem.NewMopacRunner())
 	}
 
 	QM.SetName(options.SelNames[0])
