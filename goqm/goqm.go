@@ -57,36 +57,55 @@ func main() {
 	qmprogram:=options.StringOptions[0][0]
 	method:=options.StringOptions[0][1]
 	calctype:=options.StringOptions[0][2]
-	mol, coordarray, err := chem.DecodeJSONMolecule(stdin, options.AtomsPerSel[0], 1)
-	if err != nil {
-		fmt.Fprint(os.Stderr, err.Marshal())
-		log.Fatal(err)
+	var osidemol  *chem.Topology
+	var osidecoords, sidecoords *chem.VecMatrix
+	var sidelist, sidefrozen []int
+	selections:=len(options.AtomsPerSel)
+	total:=0
+	if options.BoolOptions[0][0]{  //sidechain selections exist
+		sidecoords,osidecoords,osidemol,sidelist, sidefrozen=SideChains(stdin,options)
+		selections--
+		total+=osidemol.Len()
 	}
-	coords := coordarray[0]
-	resid, chains := GetResidueIds(mol)
-	//	fmt.Println("resid, chains", resid, chains)
-	list := chem.CutAlphaRef(mol, chains, resid)
-	optcoords := chem.ZeroVecs(len(list))
-	optcoords.SomeVecs(coords, list)
-	optatoms, _ := chem.NewTopology(nil, charge, multi) //the last 2 options are charge and multiplicity
-	optatoms.SomeAtoms(mol, list)
-	chem.ScaleBonds(optcoords,optatoms,"CA","HA2",chem.CHDist)
-	chem.ScaleBonds(optcoords,optatoms,"CA","HA3",chem.CHDist)
-	frozen := make([]int, 0, 2*len(list))
-	for i := 0; i < optatoms.Len(); i++ {
-		curr := optatoms.Atom(i)
-		if curr.Name == "HA" || curr.Name == "CA" || curr.Name == "CB" {
-			frozen = append(frozen, i)
-		}
+
+	obbmol:=make([]*chem.Topology,selections,selections)
+	obbcoords:=make([]*chem.VecMatrix,selections,selections)
+	bbcoords:=make([]*chem.VecMatrix,selections,selections)
+	bblist:=make([][]int,selections,selections)
+	bbfrozen:=make([][]int,selections,selections)
+	for i:=0;i<selections;i++{
+		bbcoords[i],obbcoords[i],obbmol[i],bblist[i], bbfrozen[i]=SideChains(stdin,options)
+		total+=obbmol[i].Len()
 	}
-	chem.PDBWrite("OPT.pdb", optatoms,optcoords,nil) /////////////////////////////////////
+//	chem.PDBWrite("OPT.pdb", optatoms,optcoords,nil) /////////////////////////////////////
 	//Now we set the calculation. Lets just start with mopac.
+//Now we put the juit together
+	bigC:=chem.ZeroVecs(total)
+	var bigA *chem.Topology
+	viewC:=chem.EmptyVecs()
+	bigFroz:=make([]int,0,total)
+	setoffset:=0
+	if options.BoolOptions[0][0]{
+		bigC.SetMatrix(0,0,osidecoords)
+		setoffset+=osidecoords.NVecs()
+		bigA=osidemol
+		bigFroz=append(bigFroz,sidefrozen...)
+	}
+	for k,v:=range(bbcoords){
+		bigC.SetMatrix(setoffset,0,v)
+		bigA,_:=chem.MergeAtomers(bigA,obbmol[k])
+		tmpfroz:=SliceOffset(bbfrozen[k],setoffset)
+		bigFroz=append(bigFroz,tmpfroz...)
+
+	}
+//Ok, we have now one big matrix and one big atom set, now the optimization
+
 	calc := new(chem.QMCalc)
 	if calctype=="Optimization"{
 		calc.Optimize=true
 	}
 	calc.RI = true //some options, including this one, are meaningless for MOPAC
-	calc.CConstraints = frozen
+	calc.CConstraints = bigFroz
 	calc.Dielectric = dielectric
 	calc.SCFTightness = 1
 	calc.Disperssion = "D3"
@@ -117,14 +136,14 @@ func main() {
 	}
 
 	QM.SetName(options.SelNames[0])
-	QM.BuildInput(optatoms, optcoords, calc)
+	QM.BuildInput(bigA, bigC, calc)
 	if err2 := QM.Run(true); err != nil {
 		log.Fatal(err2.Error())
 	}
-	var newcoords *chem.VecMatrix
+	var newBigC *chem.VecMatrix
 	var err2 error
 	if calc.Optimize{
-		newcoords, err2 = QM.GetGeometry(optatoms)
+		newBigC, err2 = QM.GetGeometry(bigA)
 		if err2 != nil {
 			log.Fatal(err2.Error())
 		}
@@ -171,4 +190,68 @@ func GetResidueIds(mol chem.Atomer) ([]int, []string) {
 
 	}
 	return residues, chains
+}
+
+
+func SideChains(stdin *bufio.Reader, options *chem.JSONOptions)(coords, optcoords *chem.VecMatrix, optatoms *chem.Topology, list, frozen []int) {
+	mol, coordarray, err := chem.DecodeJSONMolecule(stdin, options.AtomsPerSel[0], 1)
+	if err != nil {
+		fmt.Fprint(os.Stderr, err.Marshal())
+		log.Fatal(err)
+	}
+	coords = coordarray[0]
+	resid, chains := GetResidueIds(mol)
+	//	fmt.Println("resid, chains", resid, chains)
+	list = chem.CutAlphaRef(mol, chains, resid)
+	optcoords = chem.ZeroVecs(len(list))
+	optcoords.SomeVecs(coords, list)
+	optatoms, _ = chem.NewTopology(nil, charge, multi) //the last 2 options are charge and multiplicity
+	optatoms.SomeAtoms(mol, list)
+	chem.ScaleBonds(optcoords,optatoms,"CA","HA2",chem.CHDist)
+	chem.ScaleBonds(optcoords,optatoms,"CA","HA3",chem.CHDist)
+	frozen = make([]int, 0, 2*len(list))
+	for i := 0; i < optatoms.Len(); i++ {
+		curr := optatoms.Atom(i)
+		if curr.Name == "HA" || curr.Name == "CA" || curr.Name == "CB" {
+			frozen = append(frozen, i)
+		}
+	}
+	return coords, optcoords, optatoms, list, frozen
+}
+
+
+
+func BackBone(stdin *bufio.Reader, options *chem.JSONOptions, i int)(coords, optcoords *chem.VecMatrix, optatoms *chem.Topology, list, frozen []int) {
+	mol, coordarray, err := chem.DecodeJSONMolecule(stdin, options.AtomsPerSel[i], 1)
+	if err != nil {
+		fmt.Fprint(os.Stderr, err.Marshal())
+		log.Fatal(err)
+	}
+	coords = coordarray[0]
+	resid, chains := GetResidueIds(mol)
+	//	fmt.Println("resid, chains", resid, chains)
+	list = chem.CutBackRef(mol, chains, resid)
+	optcoords = chem.ZeroVecs(len(list))
+	optcoords.SomeVecs(coords, list)
+	optatoms, _ = chem.NewTopology(nil, charge, multi) //the last 2 options are charge and multiplicity
+	optatoms.SomeAtoms(mol, list)
+	chem.ScaleBonds(optcoords,optatoms,"NTZ","HNZ",chem.CHDist)
+	chem.ScaleBonds(optcoords,optatoms,"CTZ","HCZ",chem.CHDist)
+	frozen = make([]int, 0, 2*len(list))
+	for i := 0; i < optatoms.Len(); i++ {
+		curr := optatoms.Atom(i)
+		if curr.Name == "C" || curr.Name == "NTZ" || curr.Name == "N" || curr.Name == "CTZ" {
+			frozen = append(frozen, i)
+		}
+	}
+	return coords, optcoords, optatoms, list, frozen
+}
+
+
+func SliceOffset(list []int, offset int) (rlist []int) {
+	rlist=make([]int,len(list))
+	for k,v:=range(list){
+		rlist[key]=v+offset
+	}
+	return rlist
 }
