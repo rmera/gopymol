@@ -29,7 +29,7 @@ def goQM(selside="sele",selbb="",qmprogram="MOPAC2012",method="Cheap", calctype=
 		if i=="":
 			continue
 		q1.append(cmd.get_model(i))
-		lens.append(len(q1[-1].atoms))
+		lens.append(len(q1[-1].atom))
 		states.append(1)
 	bb.insert(0,selside)
 	proc = Popen("goqm", shell=True, stdin=PIPE,stdout=PIPE)

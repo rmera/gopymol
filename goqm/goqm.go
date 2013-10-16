@@ -60,12 +60,14 @@ func main() {
 	var osidemol  *chem.Topology
 	var osidecoords, sidecoords *chem.VecMatrix
 	var sidelist, sidefrozen []int
+	selindex:=0
 	selections:=len(options.AtomsPerSel)
 	total:=0
 	if options.BoolOptions[0][0]{  //sidechain selections exist
 		sidecoords,osidecoords,osidemol,sidelist, sidefrozen=SideChains(stdin,options)
 		selections--
 		total+=osidemol.Len()
+		selindex++
 	}
 
 	obbmol:=make([]*chem.Topology,selections,selections)
@@ -74,11 +76,10 @@ func main() {
 	bblist:=make([][]int,selections,selections)
 	bbfrozen:=make([][]int,selections,selections)
 	for i:=0;i<selections;i++{
-		bbcoords[i],obbcoords[i],obbmol[i],bblist[i], bbfrozen[i]=SideChains(stdin,options)
+		bbcoords[i],obbcoords[i],obbmol[i],bblist[i], bbfrozen[i]=BackBone(stdin,options,selindex)
 		total+=obbmol[i].Len()
+		selindex++
 	}
-//	chem.PDBWrite("OPT.pdb", optatoms,optcoords,nil) /////////////////////////////////////
-	//Now we set the calculation. Lets just start with mopac.
 //Now we put the juit together
 	bigC:=chem.ZeroVecs(total)
 	var bigA *chem.Topology
@@ -90,15 +91,17 @@ func main() {
 		bigA=osidemol
 		bigFroz=append(bigFroz,sidefrozen...)
 	}
-	for k,v:=range(bbcoords){
+	for k,v:=range(obbcoords){
 		bigC.SetMatrix(setoffset,0,v)
 		bigA,_=chem.MergeAtomers(bigA,obbmol[k])
 		tmpfroz:=SliceOffset(bbfrozen[k],setoffset)
 		bigFroz=append(bigFroz,tmpfroz...)
+		setoffset+=v.NVecs()
 
 	}
 	bigA.SetCharge(charge)
 	bigA.SetMulti(multi)
+	chem.PDBWrite("OPT.pdb", bigA,bigC,nil) /////////////////////////////////////
 //Ok, we have now one big matrix and one big atom set, now the optimization
 
 	calc := new(chem.QMCalc)
@@ -119,7 +122,7 @@ func main() {
 		}else if qmprogram=="MOPAC2012"{
 			calc.Method="PM6-D3H4 MOZYME"
 		}else {
-			calc.Basis = "def2-SVP" 
+			calc.Basis = "def2-SVP"
 		}
 	} else {
 		calc.Basis = "def2-TZVP"
@@ -155,7 +158,8 @@ func main() {
 		info.Molecules = len(options.AtomsPerSel)
 		geooffset:=0
 		if options.BoolOptions[0][0]{
-			sidecoords.SetVecs(newBigC,sidelist)
+			tmp.View2(newBigC,geooffset,0,len(sidelist),3)  //This is likely to change when we agree on a change for the gonum API!!!!
+			sidecoords.SetVecs(tmp,sidelist)
 			info.FramesPerMolecule = []int{1}
 			info.AtomsPerMolecule = []int{sidecoords.NVecs()}
 			geooffset+=len(sidelist)
@@ -163,11 +167,13 @@ func main() {
 		for k,v:=range(bbcoords){
 			tmp.View2(newBigC,geooffset,0,len(bblist[k]),3)  //This is likely to change when we agree on a change for the gonum API!!!!
 			v.SetVecs(tmp,bblist[k])
-			info.FramesPerMolecule=append(info.FramesPerMolecule,0)
+			info.FramesPerMolecule=append(info.FramesPerMolecule,1)
 			info.AtomsPerMolecule=append(info.AtomsPerMolecule,v.NVecs())
 
 		}
-	//	chem.XYZWrite("opti.xyz", optatoms, newcoords)
+//	for k,v:=range(bbcoords){
+//		chem.XYZWrite(fmt.Sprintf("opti%d.xyz",k), , newcoords)
+//	}
 	}else{
 		//nothing here, the else part will get deleted after tests
 	}
@@ -220,7 +226,7 @@ func SideChains(stdin *bufio.Reader, options *chem.JSONOptions)(coords, optcoord
 	}
 	coords = coordarray[0]
 	resid, chains := GetResidueIds(mol)
-	//	fmt.Println("resid, chains", resid, chains)
+//	fmt.Fprintln(os.Stderr,"SIDE! resid, chains", resid, chains)
 	list = chem.CutAlphaRef(mol, chains, resid)
 	optcoords = chem.ZeroVecs(len(list))
 	optcoords.SomeVecs(coords, list)
@@ -247,10 +253,12 @@ func BackBone(stdin *bufio.Reader, options *chem.JSONOptions, i int)(coords, opt
 		log.Fatal(err)
 	}
 	coords = coordarray[0]
+
+	//chem.PDBWrite("OPTpp.pdb", mol,coords,nil) /////////////////////////////////////
 	resid, chain := GetResidueIds(mol)
-	//	fmt.Println("resid, chains", resid, chains)
+	fmt.Fprintln(os.Stderr,"resid, chains, atomspersel, i", resid, chain, options.AtomsPerSel[i],i)
 	var err2 error
-	list,err2 = chem.CutBackRef(mol, []string{chain[0]}, [][]int{resid}) //in each backbone selection the chain should be the same for all residues
+	list,err2 = chem.CutBackRef(mol, []string{chain[0]}, [][]int{resid[1:len(resid)-1]}) //in each backbone selection the chain should be the same for all residues
 	if err!=nil{
 		panic(err2.Error())   //at least for now
 	}
@@ -263,7 +271,8 @@ func BackBone(stdin *bufio.Reader, options *chem.JSONOptions, i int)(coords, opt
 	frozen = make([]int, 0, 2*len(list))
 	for i := 0; i < optatoms.Len(); i++ {
 		curr := optatoms.Atom(i)
-		if curr.Name == "C" || curr.Name == "NTZ" || curr.Name == "N" || curr.Name == "CTZ" {
+		//In the future there could be an option to see whether C and N are fixed 
+		if  curr.Name == "NTZ" || curr.Name == "CTZ" || curr.Name == "C" || curr.Name == "N"  {
 			frozen = append(frozen, i)
 		}
 	}

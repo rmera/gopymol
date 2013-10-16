@@ -44,7 +44,9 @@ import json
 #returns dictionary with information returned by the go program
 def get_info(proc):
 	first=False
-	info=json.loads(proc.stdout.readline())
+	v=proc.stdout.readline()
+	print "INFO!", v
+	info=json.loads(v)
 	return info
 
 
