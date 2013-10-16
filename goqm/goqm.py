@@ -33,7 +33,7 @@ def goQM(selside="sele",selbb="",qmprogram="MOPAC2012",method="Cheap", calctype=
 		states.append(1)
 	bb.insert(0,selside)
 	proc = Popen("goqm", shell=True, stdin=PIPE,stdout=PIPE)
-	options=json.dumps({"SelNames":bb,"AtomsPerSel":lens,"StatesPerSel":states,"IntOptions":[[int(charge),int(multiplicity)]],"FloatOptions":[[float(dielectric)]],"StringOptions":[[qmprogram,method, calctype]]}) 
+	options=json.dumps({"SelNames":bb,"AtomsPerSel":lens,"StatesPerSel":states,"IntOptions":[[int(charge),int(multiplicity)]],"FloatOptions":[[float(dielectric)]],"StringOptions":[[qmprogram,method, calctype]],"BoolOptions":[[True]]}) 
 	proc.stdin.write(options+"\n")
 	for j in q1:
 		for i in j.atom:
@@ -47,8 +47,13 @@ def goQM(selside="sele",selbb="",qmprogram="MOPAC2012",method="Cheap", calctype=
 	energy=info["Energies"][0]
 	print "Final energy: ", energy, " kcal/mol"
 	if calctype=="Optimization":
-		mod=gochem.get_coords(proc,q1[0],["CA","HA","HA2","HA3", "O","N","H","C"],False,info,0)
-		cmd.load_model(mod,selside+"_H",discrete=1,zoom=1)
+		for k,v in enumerate(q1):
+			if k==0:
+				exclude=["CA","HA","HA2","HA3", "O","N","H","C"]
+			else:
+				exclude=["CTZ","NTZ","HCZ","HNZ","N","C"]
+			mod=gochem.get_coords(proc,v,exclude,False,info,0)
+			cmd.load_model(mod,bb[k]+"_H",discrete=1,zoom=1)
 
 
 def mainDialog():

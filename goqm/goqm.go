@@ -82,7 +82,6 @@ func main() {
 //Now we put the juit together
 	bigC:=chem.ZeroVecs(total)
 	var bigA *chem.Topology
-	viewC:=chem.EmptyVecs()
 	bigFroz:=make([]int,0,total)
 	setoffset:=0
 	if options.BoolOptions[0][0]{
@@ -93,11 +92,13 @@ func main() {
 	}
 	for k,v:=range(bbcoords){
 		bigC.SetMatrix(setoffset,0,v)
-		bigA,_:=chem.MergeAtomers(bigA,obbmol[k])
+		bigA,_=chem.MergeAtomers(bigA,obbmol[k])
 		tmpfroz:=SliceOffset(bbfrozen[k],setoffset)
 		bigFroz=append(bigFroz,tmpfroz...)
 
 	}
+	bigA.SetCharge(charge)
+	bigA.SetMulti(multi)
 //Ok, we have now one big matrix and one big atom set, now the optimization
 
 	calc := new(chem.QMCalc)
@@ -140,28 +141,42 @@ func main() {
 	if err2 := QM.Run(true); err != nil {
 		log.Fatal(err2.Error())
 	}
+//Now we ran the calculation, we must retrive the geometry and divide the coordinates among the original selections.
+
 	var newBigC *chem.VecMatrix
+	info := new(chem.JSONInfo) //Contains the return info
 	var err2 error
 	if calc.Optimize{
+		tmp:=chem.EmptyVecs()
 		newBigC, err2 = QM.GetGeometry(bigA)
 		if err2 != nil {
 			log.Fatal(err2.Error())
 		}
-		coords.SetVecs(newcoords, list)
-		chem.XYZWrite("opti.xyz", optatoms, newcoords)
-	}else{
-		newcoords=nil
-	}
+		info.Molecules = len(options.AtomsPerSel)
+		geooffset:=0
+		if options.BoolOptions[0][0]{
+			sidecoords.SetVecs(newBigC,sidelist)
+			info.FramesPerMolecule = []int{1}
+			info.AtomsPerMolecule = []int{sidecoords.NVecs()}
+			geooffset+=len(sidelist)
+		}
+		for k,v:=range(bbcoords){
+			tmp.View2(newBigC,geooffset,0,len(bblist[k]),3)  //This is likely to change when we agree on a change for the gonum API!!!!
+			v.SetVecs(tmp,bblist[k])
+			info.FramesPerMolecule=append(info.FramesPerMolecule,0)
+			info.AtomsPerMolecule=append(info.AtomsPerMolecule,v.NVecs())
 
+		}
+	//	chem.XYZWrite("opti.xyz", optatoms, newcoords)
+	}else{
+		//nothing here, the else part will get deleted after tests
+	}
 	energy,err2:=QM.GetEnergy()
 	if err2!=nil{
 		log.Fatal(err2.Error())
 	}
 	//Start transfering data back
-	info := new(chem.JSONInfo)
-	info.Molecules = 1
-	info.FramesPerMolecule = []int{1}
-	info.AtomsPerMolecule = []int{mol.Len()}
+
 	info.Energies=[]float64{energy}
 	if err2 := info.Send(os.Stdout); err2 != nil {
 		fmt.Fprint(os.Stderr, err2)
@@ -169,9 +184,13 @@ func main() {
 	}
 	//	fmt.Fprint(os.Stdout,mar)
 	//	fmt.Fprint(os.Stdout,"\n")
-	if err := chem.TransmitMoleculeJSON(nil, []*chem.VecMatrix{coords}, nil, nil, os.Stdout); err2 != nil {
-		fmt.Fprint(os.Stderr, err)
-		log.Fatal(err)
+
+	// A loop again to transmit the info.
+	for _,v:=range(bbcoords){
+		if err := chem.TransmitMoleculeJSON(nil, []*chem.VecMatrix{v}, nil, nil, os.Stdout); err2 != nil {
+			fmt.Fprint(os.Stderr, err)
+			log.Fatal(err)
+		}
 	}
 
 }
@@ -205,7 +224,7 @@ func SideChains(stdin *bufio.Reader, options *chem.JSONOptions)(coords, optcoord
 	list = chem.CutAlphaRef(mol, chains, resid)
 	optcoords = chem.ZeroVecs(len(list))
 	optcoords.SomeVecs(coords, list)
-	optatoms, _ = chem.NewTopology(nil, charge, multi) //the last 2 options are charge and multiplicity
+	optatoms, _ = chem.NewTopology(nil, 0, 0) //the last 2 options are charge and multiplicity
 	optatoms.SomeAtoms(mol, list)
 	chem.ScaleBonds(optcoords,optatoms,"CA","HA2",chem.CHDist)
 	chem.ScaleBonds(optcoords,optatoms,"CA","HA3",chem.CHDist)
@@ -228,12 +247,16 @@ func BackBone(stdin *bufio.Reader, options *chem.JSONOptions, i int)(coords, opt
 		log.Fatal(err)
 	}
 	coords = coordarray[0]
-	resid, chains := GetResidueIds(mol)
+	resid, chain := GetResidueIds(mol)
 	//	fmt.Println("resid, chains", resid, chains)
-	list = chem.CutBackRef(mol, chains, resid)
+	var err2 error
+	list,err2 = chem.CutBackRef(mol, []string{chain[0]}, [][]int{resid}) //in each backbone selection the chain should be the same for all residues
+	if err!=nil{
+		panic(err2.Error())   //at least for now
+	}
 	optcoords = chem.ZeroVecs(len(list))
 	optcoords.SomeVecs(coords, list)
-	optatoms, _ = chem.NewTopology(nil, charge, multi) //the last 2 options are charge and multiplicity
+	optatoms, _ = chem.NewTopology(nil, 0, 0) //the last 2 options are charge and multiplicity
 	optatoms.SomeAtoms(mol, list)
 	chem.ScaleBonds(optcoords,optatoms,"NTZ","HNZ",chem.CHDist)
 	chem.ScaleBonds(optcoords,optatoms,"CTZ","HCZ",chem.CHDist)
@@ -251,7 +274,7 @@ func BackBone(stdin *bufio.Reader, options *chem.JSONOptions, i int)(coords, opt
 func SliceOffset(list []int, offset int) (rlist []int) {
 	rlist=make([]int,len(list))
 	for k,v:=range(list){
-		rlist[key]=v+offset
+		rlist[k]=v+offset
 	}
 	return rlist
 }
