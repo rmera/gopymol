@@ -53,7 +53,9 @@ def get_info(proc):
 #puts coordinates returned by the go program into the model model. Coordinates of atom with names in the 
 #list name are the only one replaced, or the ones not replaced depending on whether included is True.
 #proc is the process object for the go program, atom is the lenght of the model.
-def get_coords(proc,model,names,included,info,number):
+#The residues whose IDs are in the list resids are alwayes excluded.
+def get_coords(proc,model,names,resids,included,info,number):
+	#print "COMO ES LA PUTA WEA, ME LLAMAN O NO??????????"
 	atomsread=0
 	atoms=info["AtomsPerMolecule"][number]
 	rcoords=True
@@ -62,13 +64,15 @@ def get_coords(proc,model,names,included,info,number):
 	first=True
 	while(True):
 		v=proc.stdout.readline()
+	#	print "como las w", number, v, atoms
 		if "Coords" in v and not "Molname" in v and rcoords:
 			coords=json.loads(v)
 			if included:
-				if model.atom[atomsread].name in names:
+				if model.atom[atomsread].name in names and not model.atom[atomsread].resi in resids:
 					model.atom[atomsread].coord=coords["Coords"]
 			else:
-				if not model.atom[atomsread].name in names:
+				if not model.atom[atomsread].name in names and not model.atom[atomsread].resi in resids:
+					#print "YEEEY", number
 					model.atom[atomsread].coord=coords["Coords"]
 			atomsread=atomsread+1
 			if atomsread==atoms:

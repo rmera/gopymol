@@ -19,11 +19,15 @@ def goQM(selside="sele",selbb="",qmprogram="MOPAC2012",method="Cheap", calctype=
 	lens=[]
 	states=[]
 	q1=[]
+	side=False
 	print selside ##################3
-	m=cmd.get_model(selside)
-	q1.append(m)
-	lens.append(len(q1[0].atom))
-	states.append(1)
+	if selside and not " " in selside:
+		print "NOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO"
+		side=True
+		m=cmd.get_model(selside)
+		q1.append(m)
+		lens.append(len(q1[0].atom))
+		states.append(1)
 	bb=selbb.split(",")
 	for i in bb:
 		if i=="":
@@ -31,9 +35,11 @@ def goQM(selside="sele",selbb="",qmprogram="MOPAC2012",method="Cheap", calctype=
 		q1.append(cmd.get_model(i))
 		lens.append(len(q1[-1].atom))
 		states.append(1)
-	bb.insert(0,selside)
+	if side:
+		bb.insert(0,selside)
 	proc = Popen("goqm", shell=True, stdin=PIPE,stdout=PIPE)
-	options=json.dumps({"SelNames":bb,"AtomsPerSel":lens,"StatesPerSel":states,"IntOptions":[[int(charge),int(multiplicity)]],"FloatOptions":[[float(dielectric)]],"StringOptions":[[qmprogram,method, calctype]],"BoolOptions":[[True]]}) 
+	options=json.dumps({"SelNames":bb,"AtomsPerSel":lens,"StatesPerSel":states,"IntOptions":[[int(charge),int(multiplicity)]],"FloatOptions":[[float(dielectric)]],"StringOptions":[[qmprogram,method, calctype]],"BoolOptions":[[side]]})
+	print "side", side
 	proc.stdin.write(options+"\n")
 	for j in q1:
 		for i in j.atom:
@@ -48,11 +54,13 @@ def goQM(selside="sele",selbb="",qmprogram="MOPAC2012",method="Cheap", calctype=
 	print "Final energy: ", energy, " kcal/mol"
 	if calctype=="Optimization":
 		for k,v in enumerate(q1):
-			if k==0:
+			if k==0 and side:
 				exclude=["CA","HA","HA2","HA3", "O","N","H","C"]
+				idexclude=[]
 			else:
-				exclude=["CTZ","NTZ","HCZ","HNZ","N","C"]
-			mod=gochem.get_coords(proc,v,exclude,False,info,0)
+				idexclude=[v.atom[0].resi,v.atom[-1].resi]
+				exclude=["CTZ","NTZ","HCZ","HNZ"]
+			mod=gochem.get_coords(proc,v,exclude,idexclude,False,info,k)
 			cmd.load_model(mod,bb[k]+"_H",discrete=1,zoom=1)
 
 
