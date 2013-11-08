@@ -3,6 +3,7 @@ The GUI for this program is based on that of Optimize, by Osvaldo Martin.  (http
 License: GNU General Public License
 '''
 
+
 from chempy.models import Indexed
 from chempy import Bond, Atom
 from pymol import cmd
@@ -22,7 +23,7 @@ def goQM(selside="sele",selbb="",qmprogram="MOPAC2012",method="Cheap", calctype=
 	side=False
 	print selside ##################3
 	if selside and not " " in selside:
-		print "NOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO"
+		print "NOOOOOOOOOOOOOOOOOOOddOOOOOOOOOOOOOO"
 		side=True
 		m=cmd.get_model(selside)
 		q1.append(m)

@@ -1,4 +1,3 @@
-// +build plot
 package main
 
 // Copyright Notice
@@ -35,6 +34,7 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/rmera/gochem"
+	"github.com/rmera/gochem/chemplot"
 	"github.com/rmera/scu"
 	"log"
 	"os"
@@ -73,12 +73,12 @@ func main() {
 		HL = []int{}
 		oldres1 := mol.Atom(0).Molid + 1 //the residues should be contiguous!!!
 		chem.FixNumbering(mol)
-		ramalist, errj := chem.RamaList(mol, "ABC DEFGHI", []int{0, -1}) ////
+		ramalist, errj := chemplot.RamaList(mol, "ABC DEFGHI", []int{0, -1}) ////
 		if errj != nil {
 			log.Fatal(errj)
 		}
-		ramalist2, index := chem.RamaResidueFilter(ramalist, options.StringOptions[0], false)
-		rama, errj := chem.RamaCalc(coordset[k], ramalist2)
+		ramalist2, index := chemplot.RamaResidueFilter(ramalist, options.StringOptions[0], false)
+		rama, errj := chemplot.RamaCalc(coordset[k], ramalist2)
 		if errj != nil {
 			log.Fatal(errj)
 		}
@@ -98,9 +98,9 @@ func main() {
 	name := append(options.SelNames, "Rama")
 	var err error
 	if len(ramadata) == 1 {
-		err = chem.RamaPlot(ramadata[0], HL, "Ramachandran plot", strings.Join(name, "_"))
+		err = chemplot.RamaPlot(ramadata[0], HL, "Ramachandran plot", strings.Join(name, "_"))
 	} else {
-		err = chem.RamaPlotParts(ramadata, HLS, "Ramachandran plot", strings.Join(name, "_"))
+		err = chemplot.RamaPlotParts(ramadata, HLS, "Ramachandran plot", strings.Join(name, "_"))
 	}
 	if err != nil {
 		fmt.Fprint(os.Stderr, chem.MakeJSONError("process", "main", err).Marshal())

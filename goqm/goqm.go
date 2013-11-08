@@ -34,6 +34,7 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/rmera/gochem"
+	"github.com/rmera/gochem/qm"
 	"github.com/rmera/scu"
 	"log"
 	"os"
@@ -102,11 +103,11 @@ func main() {
 	}
 	bigA.SetCharge(charge)
 	bigA.SetMulti(multi)
-	chem.PDBWrite("OPT.pdb", bigA, bigC, nil) /////////////////////////////////////
-	chem.XYZWrite("OPT.xyz", bigA, bigC) /////////////////////////////////////
+	chem.PDBWrite("OPT.pdb",bigC, bigA, nil) /////////////////////////////////////
+	chem.XYZWrite("OPT.xyz",bigC, bigA) /////////////////////////////////////
 	//Ok, we have now one big matrix and one big atom set, now the optimization
 
-	calc := new(chem.QMCalc)
+	calc := new(qm.Calc)
 	if calctype == "Optimization" {
 		calc.Optimize = true
 	}
@@ -130,15 +131,15 @@ func main() {
 		calc.Basis = "def2-TZVP"
 	}
 	//We will use the default methods and basis sets of each program. In the case of MOPAC, that is currently PM6-D3H4.
-	var QM chem.QMRunner
+	var QM qm.Runner
 	switch qmprogram {
 	case "ORCA":
-		QM = chem.QMRunner(chem.NewOrcaRunner())
+		QM = qm.Runner(qm.NewOrcaRunner())
 		QM.SetnCPU(runtime.NumCPU())
 	case "TURBOMOLE":
-		QM = chem.QMRunner(chem.NewTMRunner())
+		QM = qm.Runner(qm.NewTMRunner())
 	default:
-		QM = chem.QMRunner(chem.NewMopacRunner())
+		QM = qm.Runner(qm.NewMopacRunner())
 	}
 
 	QM.SetName(options.SelNames[0])
@@ -151,7 +152,6 @@ func main() {
 	info := new(chem.JSONInfo) //Contains the return info
 	var err2 error
 	if calc.Optimize {
-		tmp := chem.EmptyVecs()
 		newBigC, err2 = QM.GetGeometry(bigA)
 		if err2 != nil {
 			log.Fatal(err2.Error())
@@ -160,7 +160,7 @@ func main() {
 		info.Molecules = len(options.AtomsPerSel)
 		geooffset := 0
 		if options.BoolOptions[0][0] {
-			tmp.View2(newBigC, geooffset, 0, len(sidelist), 3) //This is likely to change when we agree on a change for the gonum API!!!!
+			tmp:=newBigC.View(geooffset, 0, len(sidelist), 3) //This is likely to change when we agree on a change for the gonum API!!!!
 			sidecoords.SetVecs(tmp, sidelist)
 			info.FramesPerMolecule = []int{1}
 			info.AtomsPerMolecule = []int{sidecoords.NVecs()}
@@ -170,7 +170,7 @@ func main() {
 		}
 		for k, v := range bbcoords {
 			//Take a look here in case of bugs.
-			tmp.View2(newBigC, geooffset, 0, len(bblist[k]), 3) //This is likely to change when we agree on a change for the gonum API!!!!
+			tmp:=newBigC.View(geooffset, 0, len(bblist[k]), 3) //This is likely to change when we agree on a change for the gonum API!!!!
 			v.SetVecs(tmp, bblist[k])
 			info.FramesPerMolecule = append(info.FramesPerMolecule, 1)
 			info.AtomsPerMolecule = append(info.AtomsPerMolecule, v.NVecs())

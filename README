@@ -1,24 +1,31 @@
-PyMOL plugins with gochem!
+PyMOL plugins with goChem!
 
 A framework to develop PyMOL plugins using Gochem library.
 (https://www.github.com/rmera/gochem). A PyMOL plugin executes a 
-Go/Gochem program using JSON to communicates with it via stdin/stdout.
+Go/goChem program using JSON to communicates with it via stdin/stdout.
 
-In the current proof of concept, only a stream from python to Go is used
- containing atomic data for and only one state, and a few simple options.
-A protocol for more complex communication involving multiple states for 
-PyMOL selections, and transfer of data from the go program back to the
-calling plugin will be implemented.
+The plugins currently implemented by us are the following:
 
-Notice that the go program here will not work with the master branch of Gochem. 
-You need to use the appropiate (pymol) branch. I do not make any claim about 
-these plugins working at a given time, The project is under heavy development.
+goQM: Given one or more selections and a method/program (see help in the plugin),
+will run DFT or semiempirical geometry optimization or single-point calculation
+on the selection/s given. It will cut selections (only sidechains or including 
+backbone, as the user chooses) and saturate the cut bonds in a sensible way. 
+the resulting Energy will be printed and the resulting geometry, if applicable,
+will be loaded ini PyMOL
 
-There is no publication on Gochem yet. If you use one of the plugins here,
-or any program based on Gochem before such a publication is available,
-please cite the library in your publication as:
+goRama: Given one or more PyMOL selections, it will produce Ramachandran plots.
+If several selections are given, it will assign a different color to each, if not,
+the colors will progress from red to violet following the aminoacidic sequence.
 
-Mera-Adasme, R., Pesonen, J. "Gochem: a library for computational 
+
+------------
+
+
+There is no publication on goChem yet. If you use one of the plugins here,
+or any program based on goChem before such a publication is available,
+we ask you to support goChem by citing the library in your publication as:
+
+Mera-Adasme, R., Ochsenfeld, C., Pesonen, J. "goChem: A library for computational 
 chemistry". https://www.github.com/rmera/gochem
 
 
