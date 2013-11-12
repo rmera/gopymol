@@ -131,19 +131,20 @@ func main() {
 		calc.Basis = "def2-TZVP"
 	}
 	//We will use the default methods and basis sets of each program. In the case of MOPAC, that is currently PM6-D3H4.
-	var QM qm.Runner
+	var QM qm.Handle
 	switch qmprogram {
 	case "ORCA":
-		QM = qm.Runner(qm.NewOrcaRunner())
-		QM.SetnCPU(runtime.NumCPU())
+		orca := qm.NewOrcaHandle()
+		orca.SetnCPU(runtime.NumCPU())
+		QM=qm.Handle(orca)
 	case "TURBOMOLE":
-		QM = qm.Runner(qm.NewTMRunner())
+		QM = qm.Handle(qm.NewTMHandle())
 	default:
-		QM = qm.Runner(qm.NewMopacRunner())
+		QM = qm.Handle(qm.NewMopacHandle())
 	}
 
 	QM.SetName(options.SelNames[0])
-	QM.BuildInput(bigA, bigC, calc)
+	QM.BuildInput(bigC,bigA, calc)
 	if err2 := QM.Run(true); err != nil {
 		log.Fatal(err2.Error())
 	}
@@ -152,7 +153,7 @@ func main() {
 	info := new(chem.JSONInfo) //Contains the return info
 	var err2 error
 	if calc.Optimize {
-		newBigC, err2 = QM.GetGeometry(bigA)
+		newBigC, err2 = QM.OptimizedGeometry(bigA)
 		if err2 != nil {
 			log.Fatal(err2.Error())
 		}
@@ -183,7 +184,7 @@ func main() {
 	} else {
 		//nothing here, the else part will get deleted after tests
 	}
-	energy, err2 := QM.GetEnergy()
+	energy, err2 := QM.Energy()
 	if err2 != nil {
 		log.Fatal(err2.Error())
 	}

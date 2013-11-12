@@ -23,7 +23,6 @@ def goQM(selside="sele",selbb="",qmprogram="MOPAC2012",method="Cheap", calctype=
 	side=False
 	print selside ##################3
 	if selside and not " " in selside:
-		print "NOOOOOOOOOOOOOOOOOOOddOOOOOOOOOOOOOO"
 		side=True
 		m=cmd.get_model(selside)
 		q1.append(m)
@@ -168,25 +167,24 @@ def mainDialog():
     Button(p1, text="Run QM calculation!", command=set_goQM).pack(side=BOTTOM)
 ############################ COLOR TAB ########################################
     Label(p2, text =u"""
-Dielectric: Anything that is not a 
-real number equal or greater than zero counts as no 
-dielectric.
+Dielectric: A number. If less than zero, no dielectirc
+is used.
 
 SideChain Selections: Give only one selection
-that can contain several, non-contiguous residues.
+that can contain one or more, non-contiguous residues.
 
 Backbone Selections: Give the selections separated
 by commas (,). Each Backbone selection must contain
 only contiguous residues.
 
-Note: 
+What "Cheap" or "Expensive" means
+depends on the program used, and the kind of calculation.
 
--What "Cheap" or "Expensive" means
-depends on the program used, and also on whether
-optimized geometries or only energies are obtained.
+In case of error, check the following:
 
--The selections supplied must be properly protonated.
+-Is the total charge correct?
 
+-Do the selections have hydrogens properly placed?
 
 """,justify=LEFT).pack()
 #    Button(p2, text="Reset View", command=colorize).pack(side=BOTTOM)
@@ -200,9 +198,13 @@ this plugin, or any program based on Gochem before such
 a publication is available, please support Gochem by 
 citing it as:
 
-Mera-Adasme, R., Ochsenfeld, C., Pesonen, J. "Gochem: 
-a library for computational chemistry". 
-https://www.github.com/rmera/gochem
+Mera-Adasme, R. Savacsi, G., Ochsenfeld, C., Pesonen, J. 
+"goChem: a library for computational chemistry". 
+https://www.gochem.org
+
+Bug reports, feature requests, etc to:
+devel@gochem.org
+
 
 """,justify=CENTER).pack()
     master.mainloop()
