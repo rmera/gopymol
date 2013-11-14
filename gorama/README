@@ -1,42 +1,36 @@
-goRama is a plugin for PyMOL written in Go using the Gochem library,
-(www.github.com/rmera/gochem).
-plus a "bridging" part in Python. It obtains Ramachandran plots
-for PyMOL selections. Its main purpose is to serve as
-a proof of concept for the writing of PyMOL plugins in Go/Gochem
-by using JSON-enconded data transmited via unix-like pipes.
+This is goRama, a plugin to create Ramachandran plots from PyMOL selections using goChem.
 
-In any case, the plugin is quite functional, although a few more
-features could be added with a bit more time to mess with the Tk
-interface.
+*Dependencies.
 
-In order to install goRama, put the go binary (will be distributed
-together with the source for x86-64, so people dont need the go
-toolchain) in the path, and the Python file in the PyMOL plugin 
-directory. Make sure the name of the binary is gorama.
+None.
 
-Once installed, you can use goRama from the plugin menu of
-PyMOL. After calling it, supply 1 or more selections separated
-by commas (,). Each sequence must contain only contiguous residues.
-A Ramachandran plot in png format,  named after the used selections, 
-will appear in the working directory.
+*Installation
 
-If one selection is supplied, each data point will be colored
-from red to blue to green according to the position of the 
-corresponding residue in the sequence of the selction. If several
-selections are given, the colors will correspond to the selection
-to which each point belong (red for the first selection, green for
-the last one).
+Simply put the contents of the PyMOL directory  (i.e. the files gorama.py and gochem.py) in the PyMOL plugins directory.
+Then, put the content of the Go directory (i.e. the file gorama) in your PATH.
 
-goRama illustrates communication of atomic data from several PyMOL
-selections, each with one state, to Go, without data being transfered
-back. Some basic options (the number of atoms in each selection) is
-also transfered.
+Notice that if you have another PyMOL plugin that uses goChem you will already have the file gochem.py in your PyMOL 
+plugins directory. You do not need to copy it again, but there is not danger in overwriting it.
 
-There is no publication for the Gochem library  yet. If you use goRama,
-or another program based on Gochem before such a publication is
-available, please cite the library in your publication as:
+*Usage
 
-Mera-Adasme, R., Pesonen, J. "Gochem: a library for computational 
-chemistry". https://www.github.com/rmera/gochem
+Give the plugin the name of one or more PyMOL selections, separated by commas. 
+A Ramachandran plot named with the name of the selections separated by underscores
+"_" and ending in "_Rama.png" will appear in the working directory.
+
+Example: goRama is called with the following selection names:  sele,loop1,beta3.
+The file produced will be named: sele_loop1_beta2_Rama.png
+
+If one selection is given, goRama will color the dihedral for each residue interpolating from
+red to violet (Hue 0 to 240) as the sequence progresses from N to C terminal.
+
+If more than one selection is given, goRama will assign a color to all dihedrals from one selection,
+interpolating in a similar way as the previous case.
+
+*Citing.
+There is no publication for goChem yet. If you use goRama please support the library by citing it as:
+Mera-Adasme, R., Savasci, G., Ochsenfeld, C., Pesonen, J. "goChem, a library for computational
+chemistry", http://www.gochem.org
 
 
+goRama is open-source. You can find the sources in github.com/rmera/gopymol
