@@ -28,4 +28,8 @@ we ask you to support goChem by citing the library in your publication as:
 Mera-Adasme, R., Savasci, G., Pesonen, J. "goChem: A library for computational 
 chemistry". https://www.github.com/rmera/gochem
 
+------------
+
+Note: The developers of goChem and the Go plugins for PyMOL are not associated
+with PyMOL in any way.
 
