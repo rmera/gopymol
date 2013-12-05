@@ -131,6 +131,9 @@ func main() {
 		QM=qm.Handle(orca)
 	case "TURBOMOLE":
 		QM = qm.Handle(qm.NewTMHandle())
+	case "NWCHEM":
+		QM = qm.Handle(qm.NewNWChemHandle())
+		calc.SCFConvHelp=1
 	default:
 		QM = qm.Handle(qm.NewMopacHandle())
 	}
@@ -233,13 +236,19 @@ func SideChains(stdin *bufio.Reader, options *chem.JSONOptions) (coords, optcoor
 	coords = coordarray[0]
 	resid, chains := GetResidueIds(mol)
 	//	fmt.Fprintln(os.Stderr,"SIDE! resid, chains", resid, chains)
-	list = chem.CutAlphaRef(mol, chains, resid)
+	toscale:=[]string{"CA","HA2","HA3"}
+	if options.BoolOptions[0][1]{
+		list = chem.CutAlphaRef(mol, chains, resid)
+	}else{	
+		list=chem.CutBetaRef(mol,chains,resid)
+		toscale=[]string{"CB","HB4","HB4"} //Yes, I am doing this twice for no reason other to have 3 elements in this slice.
+	}
 	optcoords = chem.ZeroVecs(len(list))
 	optcoords.SomeVecs(coords, list)
 	optatoms, _ = chem.NewTopology(nil, 0, 0) //the last 2 options are charge and multiplicity
 	optatoms.SomeAtoms(mol, list)
-	chem.ScaleBonds(optcoords, optatoms, "CA", "HA2", chem.CHDist)
-	chem.ScaleBonds(optcoords, optatoms, "CA", "HA3", chem.CHDist)
+	chem.ScaleBonds(optcoords, optatoms, toscale[0], toscale[1], chem.CHDist)
+	chem.ScaleBonds(optcoords, optatoms, toscale[0], toscale[2], chem.CHDist)
 	frozen = make([]int, 0, 2*len(list))
 	for i := 0; i < optatoms.Len(); i++ {
 		curr := optatoms.Atom(i)

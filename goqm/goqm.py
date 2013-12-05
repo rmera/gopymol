@@ -16,7 +16,7 @@ import Pmw
 
 
 #Reads a selection, cuts the Ca--CO and N--Ca bonds, replaces CO and N with nitrogens, 
-def goQM(selside="sele",selbb="",qmprogram="MOPAC2012",method="Cheap", calctype="Optimization",dielectric="-1", charge=0,multiplicity=1):
+def goQM(selside="sele",selbb="",qmprogram="MOPAC2012",method="Cheap", calctype="Optimization",dielectric="-1", charge=0,multiplicity=1, alphacut=True):
 	lens=[]
 	states=[]
 	q1=[]
@@ -38,7 +38,7 @@ def goQM(selside="sele",selbb="",qmprogram="MOPAC2012",method="Cheap", calctype=
 	if side:
 		bb.insert(0,selside)
 	proc = Popen("goqm", shell=True, stdin=PIPE,stdout=PIPE)
-	options=json.dumps({"SelNames":bb,"AtomsPerSel":lens,"StatesPerSel":states,"IntOptions":[[int(charge),int(multiplicity)]],"FloatOptions":[[float(dielectric)]],"StringOptions":[[qmprogram,method, calctype]],"BoolOptions":[[side]]})
+	options=json.dumps({"SelNames":bb,"AtomsPerSel":lens,"StatesPerSel":states,"IntOptions":[[int(charge),int(multiplicity)]],"FloatOptions":[[float(dielectric)]],"StringOptions":[[qmprogram,method, calctype]],"BoolOptions":[[side,alphacut]]})
 	print "side", side
 	proc.stdin.write(options+"\n")
 	for j in q1:
@@ -72,7 +72,10 @@ def mainDialog():
         calctype = calc_value.get()
         sidesel = selside.get()
         bbsel = selbb.get()
-        goQM(sidesel, bbsel, qmprogram, method, calctype, dielectric.get(), charge.get(), multiplicity.get())
+        cut_alpha=True
+        if alpha.get()==0:
+           cut_alpha=False
+        goQM(sidesel, bbsel, qmprogram, method, calctype, dielectric.get(), charge.get(), multiplicity.get(),cut_alpha)
     master = Tk()
     master.title(' goQM ')
     w = Label(master, text="goQM:  Quick QM calculations\n",
@@ -86,17 +89,17 @@ def mainDialog():
     p2 = nb.add(' Help ')
     p3 = nb.add('    About   ')
     nb.pack(padx=5, pady=5, fill=BOTH, expand=1)
-############################ Minimization TAB #################################
+############################ Calculation tab #################################
     group = Pmw.Group(p1,tag_text='QM calculation options')
     group.pack(fill='both', expand=1, padx=5, pady=5)
-# Force Field options
+# QM program options
     qmprog_value = StringVar(master=group.interior())
     qmprog_value.set('MOPAC2012')
     qmprog_menu = Pmw.OptionMenu(group.interior(),
                 labelpos = 'w',
                 label_text = 'QM Program',
                 menubutton_textvariable = qmprog_value,
-                items = ['MOPAC2012', 'ORCA', 'TURBOMOLE'],
+                items = ['MOPAC2012', 'ORCA', 'TURBOMOLE','NWCHEM'],
                 menubutton_width = 15,
         ).grid(row=0, columnspan=2)
 # Method
@@ -119,7 +122,7 @@ def mainDialog():
                 items = ['Optimization', 'SinglePoint'],
                 menubutton_width = 15,
         ).grid(row=2, columnspan=2)
-#
+# Side Chain Cutting scheme
     Label(group.interior(), text='Dielectric').grid(row=3, column=0)
     dielectric = StringVar(master=group.interior())
     dielectric.set("-1")
@@ -162,6 +165,15 @@ def mainDialog():
     entry_selbb.grid(row=11, column=1)
     entry_selbb.configure(state='normal')
     entry_selbb.update()
+    alpha = IntVar(master=group.interior())
+    alpha.set(1)
+    C1= Checkbutton(group.interior(), text = "alpha cut", variable = alpha , \
+                 onvalue = 1, offvalue = 0, height=2, \
+                 ).grid(row=13,column=0)
+#	C2 = Checkbutton(top, text = "Actually run calculation", variable = run, \
+#                 onvalue = True, offvalue = False, height=5, \
+#                 width = 20)
+  #  C1.pack()
 
 # Run
     Button(p1, text="Run QM calculation!", command=set_goQM).pack(side=BOTTOM)
