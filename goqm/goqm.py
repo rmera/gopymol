@@ -210,7 +210,7 @@ this plugin, or any program based on Gochem before such
 a publication is available, please support Gochem by 
 citing it as:
 
-Mera-Adasme, R. Savacsi, G., Ochsenfeld, C., Pesonen, J. 
+Mera-Adasme, R. Savacsi, G., Pesonen, J. 
 "goChem: a library for computational chemistry". 
 https://www.gochem.org
 
