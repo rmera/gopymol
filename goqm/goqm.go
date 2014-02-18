@@ -163,7 +163,7 @@ func main() {
 		if err2 != nil {
 			log.Fatal(err2.Error())
 		}
-		if qmprogram=="NWCHENM"{ //NWchem translates/rotates the system before optimizing so we need to superimpose with the original geometry in order for them to match.
+		if qmprogram=="NWCHEM"{ //NWchem translates/rotates the system before optimizing so we need to superimpose with the original geometry in order for them to match.
 			newBigC,err2=chem.Super(newBigC,bigC,bigFroz,bigFroz)
 			if err2!=nil{
 				log.Fatal(err2.Error())
