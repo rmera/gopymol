@@ -44,6 +44,12 @@ func main() {
 		fmt.Fprint(os.Stderr, err.Marshal())
 		log.Fatal(err)
 	}
+	mainName:=options.SelNames[0]
+	if len(options.AtomsPerSel)>1{
+		for _,v:=range(options.SelNames[1:]){
+			mainName=mainName+"__"+v    //inefficient but there should never be THAT many selections.
+		}
+	}
 	dielectric := options.FloatOptions[0][0]
 	charge := options.IntOptions[0][0]
 	multi := options.IntOptions[0][1]
@@ -54,15 +60,15 @@ func main() {
 	var osidecoords, sidecoords *chem.VecMatrix
 	var sidelist, sidefrozen []int
 	selindex := 0
-	selections := len(options.AtomsPerSel)
 	total := 0
+	selections := len(options.AtomsPerSel)
 	if options.BoolOptions[0][0] { //sidechain selections exist
 		sidecoords, osidecoords, osidemol, sidelist, sidefrozen = SideChains(stdin, options)
 		selections--
 		total += osidemol.Len()
 		selindex++
 	}
-
+	fmt.Fprint(os.Stderr, selections)
 	obbmol := make([]*chem.Topology, selections, selections)
 	obbcoords := make([]*chem.VecMatrix, selections, selections)
 	bbcoords := make([]*chem.VecMatrix, selections, selections)
@@ -72,6 +78,7 @@ func main() {
 		bbcoords[i], obbcoords[i], obbmol[i], bblist[i], bbfrozen[i] = BackBone(stdin, options, selindex)
 		total += obbmol[i].Len()
 		selindex++
+		fmt.Fprint(os.Stderr, "chetumanga")
 	}
 	//Now we put the juit together
 	bigC := chem.ZeroVecs(total)
@@ -95,8 +102,8 @@ func main() {
 	}
 	bigA.SetCharge(charge)
 	bigA.SetMulti(multi)
-	chem.PDBWrite("OPT.pdb",bigC, bigA, nil) /////////////////////////////////////
-	chem.XYZWrite("OPT.xyz",bigC, bigA) /////////////////////////////////////
+	chem.PDBWrite(mainName+"toOPT.pdb",bigC, bigA, nil) /////////////////////////////////////
+	chem.XYZWrite(mainName+"toOPT.xyz",bigC, bigA) /////////////////////////////////////
 	//Ok, we have now one big matrix and one big atom set, now the optimization
 
 	calc := new(qm.Calc)
@@ -131,12 +138,19 @@ func main() {
 		QM=qm.Handle(orca)
 	case "TURBOMOLE":
 		QM = qm.Handle(qm.NewTMHandle())
+	case "NWCHEM":
+		QM = qm.Handle(qm.NewNWChemHandle())
+		calc.SCFConvHelp=1
 	default:
 		QM = qm.Handle(qm.NewMopacHandle())
 	}
 
-	QM.SetName(options.SelNames[0])
+	QM.SetName(mainName)
 	QM.BuildInput(bigC,bigA, calc)
+	fmt.Fprint(os.Stderr,options.BoolOptions)
+	if options.BoolOptions[0][2]{
+		return //Dry run
+	}
 	if err2 := QM.Run(true); err != nil {
 		log.Fatal(err2.Error())
 	}
@@ -149,7 +163,12 @@ func main() {
 		if err2 != nil {
 			log.Fatal(err2.Error())
 		}
-
+		if qmprogram=="NWCHEM"{ //NWchem translates/rotates the system before optimizing so we need to superimpose with the original geometry in order for them to match.
+			newBigC,err2=chem.Super(newBigC,bigC,bigFroz,bigFroz)
+			if err2!=nil{
+				log.Fatal(err2.Error())
+			}
+		}
 		info.Molecules = len(options.AtomsPerSel)
 		geooffset := 0
 		if options.BoolOptions[0][0] {
@@ -233,13 +252,19 @@ func SideChains(stdin *bufio.Reader, options *chem.JSONOptions) (coords, optcoor
 	coords = coordarray[0]
 	resid, chains := GetResidueIds(mol)
 	//	fmt.Fprintln(os.Stderr,"SIDE! resid, chains", resid, chains)
-	list = chem.CutAlphaRef(mol, chains, resid)
+	toscale:=[]string{"CA","HA2","HA3"}
+	if options.BoolOptions[0][1]{
+		list = chem.CutAlphaRef(mol, chains, resid)
+	}else{	
+		list=chem.CutBetaRef(mol,chains,resid)
+		toscale=[]string{"CB","HB4","HB4"} //Yes, I am doing this twice for no reason other to have 3 elements in this slice.
+	}
 	optcoords = chem.ZeroVecs(len(list))
 	optcoords.SomeVecs(coords, list)
 	optatoms, _ = chem.NewTopology(nil, 0, 0) //the last 2 options are charge and multiplicity
 	optatoms.SomeAtoms(mol, list)
-	chem.ScaleBonds(optcoords, optatoms, "CA", "HA2", chem.CHDist)
-	chem.ScaleBonds(optcoords, optatoms, "CA", "HA3", chem.CHDist)
+	chem.ScaleBonds(optcoords, optatoms, toscale[0], toscale[1], chem.CHDist)
+	chem.ScaleBonds(optcoords, optatoms, toscale[0], toscale[2], chem.CHDist)
 	frozen = make([]int, 0, 2*len(list))
 	for i := 0; i < optatoms.Len(); i++ {
 		curr := optatoms.Atom(i)
