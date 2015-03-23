@@ -114,7 +114,7 @@ func main() {
 	calc.CConstraints = bigFroz
 	calc.Dielectric = dielectric
 	calc.SCFTightness = 1
-	calc.Disperssion = "D3"
+	calc.Dispersion = "D3"
 	calc.Method = "TPSS"
 	if method == "Cheap" {
 		calc.BSSE = "gcp"
@@ -234,8 +234,8 @@ func GetResidueIds(mol chem.Atomer) ([]int, []string) {
 	chains := make([]string, 0, int(mol.Len()/10))
 	for i := 0; i < mol.Len(); i++ {
 		curr := mol.Atom(i)
-		if !scu.IsInInt(curr.Molid, residues) {
-			residues = append(residues, curr.Molid)
+		if !scu.IsInInt(curr.MolID, residues) {
+			residues = append(residues, curr.MolID)
 			chains = append(chains, curr.Chain)
 		}
 

@@ -63,7 +63,7 @@ func main() {
 
 		fmt.Println("len in go", mol.Len(), coordset[k].NVecs()) //////
 		HL = []int{}
-		oldres1 := mol.Atom(0).Molid + 1 //the residues should be contiguous!!!
+		oldres1 := mol.Atom(0).MolID + 1 //the residues should be contiguous!!!
 		chem.FixNumbering(mol)
 		ramalist, errj := chemplot.RamaList(mol, "ABC DEFGHI", []int{0, -1}) ////
 		if errj != nil {
