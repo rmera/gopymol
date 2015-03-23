@@ -27,6 +27,8 @@ import (
 	"fmt"
 	"github.com/rmera/gochem"
 	"github.com/rmera/gochem/chemplot"
+	"github.com/rmera/gochem/chemjson"
+	"github.com/rmera/gochem/v3"
 	"github.com/rmera/scu"
 	"log"
 	"os"
@@ -39,15 +41,15 @@ import (
 func main() {
 	//This is the part that collects all the data from PyMOL, with all  the proper error checking.
 	stdin := bufio.NewReader(os.Stdin)
-	options, errj := chem.DecodeJSONOptions(stdin)
+	options, errj := chemjson.DecodeOptions(stdin)
 	if errj != nil {
 		fmt.Fprint(os.Stderr, errj.Marshal())
 		log.Fatal(errj)
 	}
 	mols := make([]*chem.Topology, 0, len(options.SelNames))
-	coordset := make([]*chem.VecMatrix, 0, len(options.SelNames))
+	coordset := make([]*v3.Matrix, 0, len(options.SelNames))
 	for k, _ := range options.SelNames {
-		mol, coords, errj := chem.DecodeJSONMolecule(stdin, options.AtomsPerSel[k],1)
+		mol, coords, errj := chemjson.DecodeMolecule(stdin, options.AtomsPerSel[k],1)
 		if errj != nil {
 			fmt.Fprint(os.Stderr, errj.Marshal())
 			log.Fatal(errj)
@@ -95,6 +97,6 @@ func main() {
 		err = chemplot.RamaPlotParts(ramadata, HLS, "Ramachandran plot", strings.Join(name, "_"))
 	}
 	if err != nil {
-		fmt.Fprint(os.Stderr, chem.MakeJSONError("process", "main", err).Marshal())
+		fmt.Fprint(os.Stderr, chemjson.NewError("process", "main", err).Marshal())
 	}
 }

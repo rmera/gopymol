@@ -27,6 +27,8 @@ import (
 	"fmt"
 	"github.com/rmera/gochem"
 	"github.com/rmera/gochem/qm"
+	"github.com/rmera/gochem/v3"
+	"github.com/rmera/gochem/chemjson"
 	"github.com/rmera/scu"
 	"log"
 	"os"
@@ -39,7 +41,7 @@ import (
 func main() {
 	//This is the part that collects all the data from PyMOL, with all  the proper error checking.
 	stdin := bufio.NewReader(os.Stdin)
-	options, err := chem.DecodeJSONOptions(stdin)
+	options, err := chemjson.DecodeOptions(stdin)
 	if err != nil {
 		fmt.Fprint(os.Stderr, err.Marshal())
 		log.Fatal(err)
@@ -57,7 +59,7 @@ func main() {
 	method := options.StringOptions[0][1]
 	calctype := options.StringOptions[0][2]
 	var osidemol *chem.Topology
-	var osidecoords, sidecoords *chem.VecMatrix
+	var osidecoords, sidecoords *v3.Matrix
 	var sidelist, sidefrozen []int
 	selindex := 0
 	total := 0
@@ -70,8 +72,8 @@ func main() {
 	}
 	fmt.Fprint(os.Stderr, selections)
 	obbmol := make([]*chem.Topology, selections, selections)
-	obbcoords := make([]*chem.VecMatrix, selections, selections)
-	bbcoords := make([]*chem.VecMatrix, selections, selections)
+	obbcoords := make([]*v3.Matrix, selections, selections)
+	bbcoords := make([]*v3.Matrix, selections, selections)
 	bblist := make([][]int, selections, selections)
 	bbfrozen := make([][]int, selections, selections)
 	for i := 0; i < selections; i++ {
@@ -81,7 +83,7 @@ func main() {
 		fmt.Fprint(os.Stderr, "chetumanga")
 	}
 	//Now we put the juit together
-	bigC := chem.ZeroVecs(total)
+	bigC := v3.Zeros(total)
 	bigA,_:=chem.NewTopology([]*chem.Atom{},0,0)
 	bigFroz := make([]int, 0, total)
 	setoffset := 0
@@ -155,8 +157,8 @@ func main() {
 		log.Fatal(err2.Error())
 	}
 	//Now we ran the calculation, we must retrive the geometry and divide the coordinates among the original selections.
-	var newBigC *chem.VecMatrix
-	info := new(chem.JSONInfo) //Contains the return info
+	var newBigC *v3.Matrix
+	info := new(chemjson.Info) //Contains the return info
 	var err2 error
 	if calc.Optimize {
 		newBigC, err2 = QM.OptimizedGeometry(bigA)
@@ -212,14 +214,14 @@ func main() {
 	// A loop again to transmit the info.
 
 	if options.BoolOptions[0][0] {
-		if err := chem.TransmitMoleculeJSON(nil, []*chem.VecMatrix{sidecoords}, nil, nil, os.Stdout); err2 != nil {
+		if err := chemjson.SendMolecule(nil, []*v3.Matrix{sidecoords}, nil, nil, os.Stdout); err2 != nil {
 			fmt.Fprint(os.Stderr, err)
 			log.Fatal(err)
 		}
 	}
 	for _, v := range bbcoords {
 		fmt.Fprintln(os.Stderr,"BB transmit!", v.NVecs())
-		if err := chem.TransmitMoleculeJSON(nil, []*chem.VecMatrix{v}, nil, nil, os.Stdout); err2 != nil {
+		if err := chemjson.SendMolecule(nil, []*v3.Matrix{v}, nil, nil, os.Stdout); err2 != nil {
 			fmt.Fprint(os.Stderr, err)
 			log.Fatal(err)
 		}
@@ -243,8 +245,8 @@ func GetResidueIds(mol chem.Atomer) ([]int, []string) {
 	return residues, chains
 }
 
-func SideChains(stdin *bufio.Reader, options *chem.JSONOptions) (coords, optcoords *chem.VecMatrix, optatoms *chem.Topology, list, frozen []int) {
-	mol, coordarray, err := chem.DecodeJSONMolecule(stdin, options.AtomsPerSel[0], 1)
+func SideChains(stdin *bufio.Reader, options *chemjson.Options) (coords, optcoords *v3.Matrix, optatoms *chem.Topology, list, frozen []int) {
+	mol, coordarray, err := chemjson.DecodeMolecule(stdin, options.AtomsPerSel[0], 1)
 	if err != nil {
 		fmt.Fprint(os.Stderr, err.Marshal())
 		log.Fatal(err)
@@ -259,7 +261,7 @@ func SideChains(stdin *bufio.Reader, options *chem.JSONOptions) (coords, optcoor
 		list=chem.CutBetaRef(mol,chains,resid)
 		toscale=[]string{"CB","HB4","HB4"} //Yes, I am doing this twice for no reason other to have 3 elements in this slice.
 	}
-	optcoords = chem.ZeroVecs(len(list))
+	optcoords = v3.Zeros(len(list))
 	optcoords.SomeVecs(coords, list)
 	optatoms, _ = chem.NewTopology(nil, 0, 0) //the last 2 options are charge and multiplicity
 	optatoms.SomeAtoms(mol, list)
@@ -275,8 +277,8 @@ func SideChains(stdin *bufio.Reader, options *chem.JSONOptions) (coords, optcoor
 	return coords, optcoords, optatoms, list, frozen
 }
 
-func BackBone(stdin *bufio.Reader, options *chem.JSONOptions, i int) (coords, optcoords *chem.VecMatrix, optatoms *chem.Topology, list, frozen []int) {
-	mol, coordarray, err := chem.DecodeJSONMolecule(stdin, options.AtomsPerSel[i], 1)
+func BackBone(stdin *bufio.Reader, options *chemjson.Options, i int) (coords, optcoords *v3.Matrix, optatoms *chem.Topology, list, frozen []int) {
+	mol, coordarray, err := chemjson.DecodeMolecule(stdin, options.AtomsPerSel[i], 1)
 	if err != nil {
 		fmt.Fprint(os.Stderr, err.Marshal())
 		log.Fatal(err)
@@ -291,7 +293,7 @@ func BackBone(stdin *bufio.Reader, options *chem.JSONOptions, i int) (coords, op
 	if err != nil {
 		panic(err2.Error()) //at least for now
 	}
-	optcoords = chem.ZeroVecs(len(list))
+	optcoords = v3.Zeros(len(list))
 	optcoords.SomeVecs(coords, list)
 	optatoms, _ = chem.NewTopology(nil, 0, 0) //the last 2 options are charge and multiplicity
 	optatoms.SomeAtoms(mol, list)

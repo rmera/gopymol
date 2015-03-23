@@ -34,6 +34,7 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/rmera/gochem"
+	"github.com/rmera/gochem/chemjson"
 //	"github.com/rmera/scu"
 	"log"
 	"os"
@@ -46,12 +47,12 @@ import (
 func main() {
 	//This is the part that collects all the data from PyMOL, with all  the proper error checking.
 	stdin := bufio.NewReader(os.Stdin)
-	options, err := chem.DecodeJSONOptions(stdin)
+	options, err := chemjson.DecodeOptions(stdin)
 	if err != nil {
 		fmt.Fprint(os.Stderr, err.Marshal())
 		log.Fatal(err)
 	}
-	mol, coordarray, err := chem.DecodeJSONMolecule(stdin, options.AtomsPerSel[0],1)
+	mol, coordarray, err := chemjson.DecodeMolecule(stdin, options.AtomsPerSel[0],1)
 	if err != nil {
 		fmt.Fprint(os.Stderr, err.Marshal())
 		log.Fatal(err)
@@ -76,13 +77,13 @@ func main() {
 	}
 	newmol,err2:=chem.Reduce(mol,coords,build,rep)
 	if err2!=nil{
-		fmt.Fprint(os.Stderr,chem.MakeJSONError("process","chem.Reduce",err2)) //Not always fatal.
+		fmt.Fprint(os.Stderr,chemjson.NewError("process","chem.Reduce",err2)) //Not always fatal.
 		if  newmol==nil{ // !strings.Contains(err2.Error(),"invalid argument"){
 			log.Fatal(err2)
 			}
 	}
 	//Start transfering data back
-	info:=new(chem.JSONInfo)
+	info:=new(chemjson.Info)
 	info.Molecules=1
 	info.FramesPerMolecule=[]int{1}
 	info.AtomsPerMolecule=[]int{newmol.Len()}
@@ -92,7 +93,7 @@ func main() {
 	}
 	//	fmt.Fprint(os.Stdout,mar)
 	//	fmt.Fprint(os.Stdout,"\n")
-	if err2:=chem.TransmitMoleculeJSON(newmol,newmol.Coords,nil,nil,os.Stdout); err2!=nil{
+	if err2:=chemjson.SendMolecule(newmol,newmol.Coords,nil,nil,os.Stdout); err2!=nil{
 		fmt.Fprint(os.Stderr,err2)
 		log.Fatal(err2)
 	}
