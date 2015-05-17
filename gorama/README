@@ -28,9 +28,12 @@ If more than one selection is given, goRama will assign a color to all dihedrals
 interpolating in a similar way as the previous case.
 
 *Citing.
-There is no publication for goChem yet. If you use goRama please support the library by citing it as:
-Mera-Adasme, R., Savasci, G., Pesonen, J. "goChem, a library for computational
-chemistry", http://www.gochem.org
+goRama uses goChem. There is no publication for goChem yet. If you use goRama please support the library 
+by citing it as:
+Mera-Adasme, R., Savasci, G., Pesonen, J. "goChem, a library for computational chemistry", http://www.gochem.org
+
+If you cite goChem, please let us know so we can add your paper to the list in the gochem website.
+
 
 
 goRama is open-source. You can find the sources in github.com/rmera/gopymol

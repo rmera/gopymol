@@ -104,8 +104,8 @@ func main() {
 	}
 	bigA.SetCharge(charge)
 	bigA.SetMulti(multi)
-	chem.PDBWrite(mainName+"toOPT.pdb",bigC, bigA, nil) /////////////////////////////////////
-	chem.XYZWrite(mainName+"toOPT.xyz",bigC, bigA) /////////////////////////////////////
+	chem.PDBFileWrite(mainName+"toOPT.pdb",bigC, bigA, nil) /////////////////////////////////////
+	chem.XYZFileWrite(mainName+"toOPT.xyz",bigC, bigA) /////////////////////////////////////
 	//Ok, we have now one big matrix and one big atom set, now the optimization
 
 	calc := new(qm.Calc)

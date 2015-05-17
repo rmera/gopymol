@@ -64,13 +64,17 @@ def jsoner(sel):
 #	if  proc.wait() != 1:
 #		print "There were some errors"
 #	for j in proc.stderr:
-#		print(json.loads(j))a
+#		print(json.loads(j))
 #	proc.stderr.close()	
 #	for i in proc.stdout:
 #		print json.loads(i)
 	info = gochem.get_info(proc)
 	mod=gochem.get_model(proc,info,0)
-	cmd.load_model(mod,sel+"_H",discrete=1,zoom=1)
+
+	cmd.load_model(mod,sel+"_Htmp",discrete=1,zoom=1)
+	modR=cmd.get_pdbstr(sel+"_Htmp")
+	cmd.read_pdbstr(modR,sel+"_H")
+	cmd.delete(sel+"_Htmp")
 	print "Jumalauta y wea"
 
 	

@@ -75,8 +75,12 @@ func main() {
 	}else{
 		build=options.IntOptions[0][0]
 	}
-	newmol,err2:=chem.Reduce(mol,coords,build,rep)
+	newmol,err2:=chem.Reduce(mol,coords,build,rep,"reduce")
 	if err2!=nil{
+//		if err,ok :=err2.(chem.Error); ok{
+//			fmt.Println(err.Decorate(""))
+//		}
+//		fmt.Println(err2)//////////
 		fmt.Fprint(os.Stderr,chemjson.NewError("process","chem.Reduce",err2)) //Not always fatal.
 		if  newmol==nil{ // !strings.Contains(err2.Error(),"invalid argument"){
 			log.Fatal(err2)

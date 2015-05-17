@@ -40,6 +40,8 @@ When goQM fails, checking the cut-geometry produced by goQM before sending it to
 and OPT.xyz) can be useful to pinpoint the problem. Also, check the input and output files of the QM program. All 
 these files will be in the working directory.
 
+A QM calculation will fail if the side chain of a proline is attempted to be added. Because proline's sidechain has
+a second covalent bond to the backbone, this residue is not supported for sidechain-only addition.
 
 As a final, important point:
 
@@ -50,9 +52,12 @@ to include a protein's C-terminal or N-terminal residue in a goQM calculations.
 
 
 *Citing.
-There is no publication for goChem yet. If you use goQM please support the library by citing it as:
-Mera-Adasme, R., Savasci, G., Pesonen, J. "goChem, a library for computational
-chemistry", http://www.gochem.org
+
+goQM uses goChem. There is no publication for goQM yet. If you use goRama please support the library 
+by citing it as:
+Mera-Adasme, R., Savasci, G., Pesonen, J. "goChem, a library for computational chemistry", http://www.gochem.org
+
+If you cite goChem, please let us know so we can add your paper to the list in the gochem website.
 
 
 goQM is open-source. You can find the sources in github.com/rmera/gopymol

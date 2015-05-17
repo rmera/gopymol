@@ -45,7 +45,7 @@ import json
 def get_info(proc):
 	first=False
 	v=proc.stdout.readline()
-	print "INFO!", v
+	print "\nINFO!", v
 	info=json.loads(v)
 	return info
 
@@ -130,8 +130,8 @@ def get_model(proc, info,number):
 			at.name=ad["Name"]
 			at.symbol=ad["Symbol"]
 			at.chain=ad["Chain"]
-			at.id=ad["Id"]
-			at.resi_number=ad["Molid"]
+			at.id=ad["ID"]
+			at.resi_number=ad["MolID"]
 			at.resn=ad["Molname"]
 			vmodel.atom.append(at)
 			atomsread=atomsread+1
