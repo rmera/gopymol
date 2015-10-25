@@ -84,19 +84,19 @@ func main() {
 	}
 	//Now we put the juit together
 	bigC := v3.Zeros(total)
-	bigA,_:=chem.NewTopology([]*chem.Atom{},0,0)
+	bigA:=chem.NewTopology([]*chem.Atom{},0,0)
 	bigFroz := make([]int, 0, total)
 	setoffset := 0
 	if options.BoolOptions[0][0] {
 		bigC.SetMatrix(0, 0, osidecoords)
 		setoffset += osidecoords.NVecs()
-		bigA,_ = chem.MergeAtomers(bigA,osidemol)
+		bigA = chem.MergeAtomers(bigA,osidemol)
 	//	bigA = osidemol
 		bigFroz = append(bigFroz, sidefrozen...)
 	}
 	for k, v := range obbcoords {
 		bigC.SetMatrix(setoffset, 0, v)
-		bigA, _ = chem.MergeAtomers(bigA, obbmol[k])
+		bigA = chem.MergeAtomers(bigA, obbmol[k])
 		tmpfroz := SliceOffset(bbfrozen[k], setoffset)
 		bigFroz = append(bigFroz, tmpfroz...)
 		setoffset += v.NVecs()
@@ -263,7 +263,7 @@ func SideChains(stdin *bufio.Reader, options *chemjson.Options) (coords, optcoor
 	}
 	optcoords = v3.Zeros(len(list))
 	optcoords.SomeVecs(coords, list)
-	optatoms, _ = chem.NewTopology(nil, 0, 0) //the last 2 options are charge and multiplicity
+	optatoms = chem.NewTopology(nil, 0, 0) //the last 2 options are charge and multiplicity
 	optatoms.SomeAtoms(mol, list)
 	chem.ScaleBonds(optcoords, optatoms, toscale[0], toscale[1], chem.CHDist)
 	chem.ScaleBonds(optcoords, optatoms, toscale[0], toscale[2], chem.CHDist)
@@ -295,7 +295,7 @@ func BackBone(stdin *bufio.Reader, options *chemjson.Options, i int) (coords, op
 	}
 	optcoords = v3.Zeros(len(list))
 	optcoords.SomeVecs(coords, list)
-	optatoms, _ = chem.NewTopology(nil, 0, 0) //the last 2 options are charge and multiplicity
+	optatoms = chem.NewTopology(nil, 0, 0) //the last 2 options are charge and multiplicity
 	optatoms.SomeAtoms(mol, list)
 	chem.ScaleBonds(optcoords, optatoms, "NTZ", "HNZ", chem.CHDist)
 	chem.ScaleBonds(optcoords, optatoms, "CTZ", "HCZ", chem.CHDist)
