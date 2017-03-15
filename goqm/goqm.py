@@ -11,7 +11,7 @@ from subprocess import Popen, PIPE
 import array
 import gochem
 import json
-from Tkinter import *
+from tkinter import *
 import Pmw
 
 
@@ -21,7 +21,7 @@ def goQM(selside="sele",selbb="",qmprogram="MOPAC2012",method="Cheap", calctype=
 	states=[]
 	q1=[]
 	side=False
-	print selside ##################3
+	print(selside) ##################3
 	if selside and not " " in selside:
 		side=True
 		m=cmd.get_model(selside)
@@ -39,22 +39,23 @@ def goQM(selside="sele",selbb="",qmprogram="MOPAC2012",method="Cheap", calctype=
 		bb.insert(0,selside)
 	proc = Popen("goqm", shell=True, stdin=PIPE,stdout=PIPE)
 	options=json.dumps({"SelNames":bb,"AtomsPerSel":lens,"StatesPerSel":states,"IntOptions":[[int(charge),int(multiplicity)]],"FloatOptions":[[float(dielectric)]],"StringOptions":[[qmprogram,method, calctype]],"BoolOptions":[[side,alphacut,dryrun]]})
-	print options ######
-	print "side", side
-	proc.stdin.write(options+"\n")
+	print(options) ######
+	print("side", side)
+	proc.stdin.write(options.encode(encoding='UTF-8'))
+	proc.stdin.write("\n".encode(encoding='UTF-8'))
 	for j in q1:
 		for i in j.atom:
 			atom,coords=gochem.Atom2gcRef(i)
-			proc.stdin.write(atom+"\n")
-			proc.stdin.write(coords+"\n")
+			proc.stdin.write((atom+"\n").encode(encoding='UTF-8'))
+			proc.stdin.write((coords+"\n").encode(encoding='UTF-8'))
 	proc.stdin.close()
 	if  proc.wait() != 0:
-		print "There were some errors"
+		print("There were some errors")
 	if dryrun:
 		return  #in a dry run there is nothing to receive. The input files should be in the current directory.
 	info=gochem.get_info(proc)
 	energy=info["Energies"][0]
-	print "Final energy: ", energy, " kcal/mol"
+	print("Final energy: ", energy, " kcal/mol")
 	if calctype=="Optimization":
 		for k,v in enumerate(q1):
 			if k==0 and side:
@@ -84,9 +85,9 @@ def mainDialog():
         goQM(sidesel, bbsel, qmprogram, method, calctype, dielectric.get(), charge.get(), multiplicity.get(),cut_alpha,dodryrun)
     master = Tk()
     master.title(' goQM ')
-    w = Label(master, text="goQM:  Quick QM calculations\n",
-                                background = 'black',
-                                foreground = 'white')
+    w = Label(master, text="goQM:  Quick QM calculations\n")#,
+                               # background = 'black',
+                               # foreground = 'white')
     w.pack(expand=1, fill = 'both', padx=4, pady=4)
 ############################ NoteBook #########################################
     Pmw.initialise()
@@ -186,7 +187,7 @@ def mainDialog():
 # Run
     Button(p1, text="Run QM calculation!", command=set_goQM).pack(side=BOTTOM)
 ############################ COLOR TAB ########################################
-    Label(p2, text =u"""
+    Label(p2, text ="""
 Dielectric: A number. If less than zero, no dielectirc
 is used.
 

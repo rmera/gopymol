@@ -45,7 +45,7 @@ import json
 def get_info(proc):
 	first=False
 	v=proc.stdout.readline()
-	print "\nINFO!", v
+	print("\nINFO!", v)
 	info=json.loads(v)
 	return info
 
