@@ -37,8 +37,8 @@
 from chempy.models import Indexed
 from chempy import Bond, Atom
 from pymol import cmd
-import tkSimpleDialog
-import tkMessageBox
+import tkinter.simpledialog
+import tkinter.messagebox
 import json
 from subprocess import Popen, PIPE
 
@@ -52,20 +52,20 @@ def jsoner(sel1):
 	states=[]
 	for j in sel1:
 		q1.append(cmd.get_model(j))
-		print "current sel: ", j, len(q1[-1].atom)
+		print("current sel: ", j, len(q1[-1].atom))
 		lens.append(len(q1[-1].atom))
 		states.append(1)
 	proc = Popen("gorama", shell=True, stdin=PIPE)  #, stderr=PIPE)
 	options=json.dumps({"SelNames":sel1,"AtomsPerSel":lens,"StatesPerSel":states,"StringOptions":[["GLY"]]})  #, "IntOptions":[[5, 11]] })
-	proc.stdin.write(options+"\n")
+	proc.stdin.write((options+"\n").encode(encoding='UTF-8'))
 	for k in q1:
 		for i in k.atom:
 			atom,coords=Atom2gcRef(i)
-			proc.stdin.write(atom+"\n")
-			proc.stdin.write(coords+"\n")
+			proc.stdin.write((atom+"\n").encode(encoding='UTF-8'))
+			proc.stdin.write((coords+"\n").encode(encoding='UTF-8'))
 	proc.stdin.close()
 	if  proc.wait() != 0:
-		print "There were some errors"
+		print("There were some errors")
 	#some errors maybe just warnings
 #	for i in proc.stderr:
 #		try:
@@ -87,7 +87,7 @@ def Atom2gcRef(i):
 #maybe it would be better to make this app a pymol script, so we don't need this interface        
 def goRamaDialog(app): 
 
-	sel = tkSimpleDialog.askstring("goRama",
+	sel = tkinter.simpledialog.askstring("goRama",
                                        'Enter selection names separated by commas',
                                        parent=app.root)
 	selsp=sel.split(",")

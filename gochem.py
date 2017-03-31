@@ -46,7 +46,7 @@ def get_info(proc):
 	first=False
 	v=proc.stdout.readline()
 	print("\nINFO!", v)
-	info=json.loads(v)
+	info=json.loads(v.decode(encoding='UTF-8'))
 	return info
 
 
@@ -123,7 +123,7 @@ def get_model(proc, info,number):
 	rss=False
 	first=True
 	while(True):
-		v=proc.stdout.readline()
+		v=proc.stdout.readline().decode(encoding='UTF-8')
 		if "Molname" in v and ratoms:
 			ad=json.loads(v)
 			at=Atom()

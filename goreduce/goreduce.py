@@ -37,8 +37,8 @@
 from chempy.models import Indexed
 from chempy import Bond, Atom
 from pymol import cmd
-import tkSimpleDialog
-import tkMessageBox
+import tkinter.simpledialog
+import tkinter.messagebox
 import json
 from subprocess import Popen, PIPE
 import array
@@ -55,11 +55,11 @@ def jsoner(sel):
 	states.append(1)
 	proc = Popen("goreduce", shell=True, stdin=PIPE, stdout=PIPE)
 	options=json.dumps({"SelNames":[sel],"AtomsPerSel":lens,"StatesPerSel":states})  #, "IntOptions":[[5, 11]] })
-	proc.stdin.write(options+"\n")
+	proc.stdin.write((options+"\n").encode(encoding='UTF-8'))
 	for i in q1.atom:
 		atom,coords=gochem.Atom2gcRef(i)
-		proc.stdin.write(atom+"\n")
-		proc.stdin.write(coords+"\n")
+		proc.stdin.write((atom+"\n").encode(encoding='UTF-8'))
+		proc.stdin.write((coords+"\n").encode(encoding='UTF-8'))
 	proc.stdin.close()
 #	if  proc.wait() != 1:
 #		print "There were some errors"
@@ -75,7 +75,7 @@ def jsoner(sel):
 	modR=cmd.get_pdbstr(sel+"_Htmp")
 	cmd.read_pdbstr(modR,sel+"_H")
 	cmd.delete(sel+"_Htmp")
-	print "Jumalauta y wea"
+	print("Jumalauta y wea")
 
 	
 
@@ -85,7 +85,7 @@ def jsoner(sel):
 #maybe it would be better to make this app a pymol script, so we don't need this interface        
 def goReduceDialog(app): 
 
-	sel = tkSimpleDialog.askstring("goReduce",
+	sel = tkinter.simpledialog.askstring("goReduce",
                                        'Enter the selection to protonate',
                                        parent=app.root)
 	jsoner(sel)
