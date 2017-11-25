@@ -35,8 +35,8 @@
 from __future__ import print_function
 try:
     # for Python2
-    import Tkinter.simpledialog   ## notice capitalized T in Tkinter 
-    import Tkinter.messagebox
+    import tkSimpleDialog   ## notice capitalized T in Tkinter 
+    import tkMessageBox
 
 except ImportError:
     # for Python3
@@ -95,7 +95,7 @@ def Atom2gcRef(i):
 #maybe it would be better to make this app a pymol script, so we don't need this interface        
 def goRamaDialog(app): 
 
-	sel = tkinter.simpledialog.askstring("goRama",
+	sel = tkSimpleDialog.askstring("goRama",
                                        'Enter selection names separated by commas',
                                        parent=app.root)
 	selsp=sel.split(",")

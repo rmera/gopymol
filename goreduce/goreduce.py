@@ -36,8 +36,8 @@
 from __future__ import print_function
 try:
     # for Python2
-    import Tkinter.simpledialog   ## notice capitalized T in Tkinter 
-    import Tkinter.messagebox
+    import tkSimpleDialog   ## notice capitalized T in Tkinter 
+    import tkMessageBox
 
 except ImportError:
     # for Python3
@@ -95,7 +95,7 @@ def jsoner(sel):
 #maybe it would be better to make this app a pymol script, so we don't need this interface        
 def goReduceDialog(app): 
 
-	sel = tkinter.simpledialog.askstring("goReduce",
+	sel = Tkinter.SimpleDialog.askstring("goReduce",
                                        'Enter the selection to protonate',
                                        parent=app.root)
 	jsoner(sel)
