@@ -84,7 +84,7 @@ func main() {
 	}
 	//Now we put the juit together
 	bigC := v3.Zeros(total)
-	bigA:=chem.NewTopology([]*chem.Atom{},0,0)
+	bigA:=chem.NewTopology(1,0)
 	bigFroz := make([]int, 0, total)
 	setoffset := 0
 	if options.BoolOptions[0][0] {
@@ -110,7 +110,7 @@ func main() {
 
 	calc := new(qm.Calc)
 	if calctype == "Optimization" {
-		calc.Optimize = true
+		calc.Job=qm.Job{Opti:true}
 	}
 	calc.RI = true //some options, including this one, are meaningless for MOPAC
 	calc.CConstraints = bigFroz
@@ -143,6 +143,8 @@ func main() {
 	case "NWCHEM":
 		QM = qm.Handle(qm.NewNWChemHandle())
 		calc.SCFConvHelp=1
+	case "FERMIONS":
+		QM = qm.Handle(qm.NewFermionsHandle())
 	default:
 		QM = qm.Handle(qm.NewMopacHandle())
 	}
@@ -160,7 +162,7 @@ func main() {
 	var newBigC *v3.Matrix
 	info := new(chemjson.Info) //Contains the return info
 	var err2 error
-	if calc.Optimize {
+	if calc.Job.Opti==true {
 		newBigC, err2 = QM.OptimizedGeometry(bigA)
 		if err2 != nil {
 			log.Fatal(err2.Error())
@@ -263,7 +265,7 @@ func SideChains(stdin *bufio.Reader, options *chemjson.Options) (coords, optcoor
 	}
 	optcoords = v3.Zeros(len(list))
 	optcoords.SomeVecs(coords, list)
-	optatoms = chem.NewTopology(nil, 0, 0) //the last 2 options are charge and multiplicity
+	optatoms = chem.NewTopology(1, 0) //the last 2 options are charge and multiplicity
 	optatoms.SomeAtoms(mol, list)
 	chem.ScaleBonds(optcoords, optatoms, toscale[0], toscale[1], chem.CHDist)
 	chem.ScaleBonds(optcoords, optatoms, toscale[0], toscale[2], chem.CHDist)
@@ -295,7 +297,7 @@ func BackBone(stdin *bufio.Reader, options *chemjson.Options, i int) (coords, op
 	}
 	optcoords = v3.Zeros(len(list))
 	optcoords.SomeVecs(coords, list)
-	optatoms = chem.NewTopology(nil, 0, 0) //the last 2 options are charge and multiplicity
+	optatoms = chem.NewTopology(1, 0) //the last 2 options are charge and multiplicity
 	optatoms.SomeAtoms(mol, list)
 	chem.ScaleBonds(optcoords, optatoms, "NTZ", "HNZ", chem.CHDist)
 	chem.ScaleBonds(optcoords, optatoms, "CTZ", "HCZ", chem.CHDist)

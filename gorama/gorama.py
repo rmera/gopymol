@@ -32,13 +32,21 @@
 
 
 ##This work is dedicated to the long life of the Ven. Khempo Phuntzok Tenzin Rinpoche.##
+from __future__ import print_function
+try:
+    # for Python2
+    import Tkinter.simpledialog   ## notice capitalized T in Tkinter 
+    import Tkinter.messagebox
+
+except ImportError:
+    # for Python3
+    import tkinter.simpledialog
+    import tkinter.messagebox
 
 
 from chempy.models import Indexed
 from chempy import Bond, Atom
 from pymol import cmd
-import tkinter.simpledialog
-import tkinter.messagebox
 import json
 from subprocess import Popen, PIPE
 

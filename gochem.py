@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 #!/usr/bin/python
 
 # Copyright Notice

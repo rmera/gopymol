@@ -1,7 +1,17 @@
+from __future__ import print_function
+
 '''
 The GUI for this program is based on that of Optimize, by Osvaldo Martin.  (http://www.pymolwiki.org/index.php/optimize)
 License: GNU General Public License
 '''
+
+try:
+    # for Python2
+    from Tkinter import *   ## notice capitalized T in Tkinter 
+except ImportError:
+    # for Python3
+    from tkinter import * 
+
 
 
 from chempy.models import Indexed
@@ -11,7 +21,6 @@ from subprocess import Popen, PIPE
 import array
 import gochem
 import json
-from tkinter import *
 import Pmw
 
 
@@ -106,7 +115,7 @@ def mainDialog():
                 labelpos = 'w',
                 label_text = 'QM Program',
                 menubutton_textvariable = qmprog_value,
-                items = ['MOPAC2012', 'ORCA', 'TURBOMOLE','NWCHEM'],
+                items = ['MOPAC2012', 'ORCA', 'TURBOMOLE','NWCHEM','FERMIONS'],
                 menubutton_width = 15,
         ).grid(row=0, columnspan=2)
 # Method
