@@ -1,0 +1,64 @@
+This is goQM, a plugin for quick QM calculations on protein PyMOL selections using goChem.
+
+*Requirements.
+
+goQM itself doesn't have dependencies outside PyMOL. In order to use it you do need to have at least
+one of the following QM programs installed.
+
+MOPAC2012
+
+ORCA 3.0
+
+NWChem 6.5
+
+You need to obtain these programs from their owners/distributors. At the time of writing, ORCA and MOPAC2012 are
+free of charge for academic use and NWChem is Free/Open Source software.
+
+*Installation
+
+Installation of the binaries is trivial. 
+
+Simply put the contents of the PyMOL directory  (i.e. the files goqm.py and gochem.py) in the PyMOL plugins directory.
+Then, put the content of the Go directory (i.e. the file goqm) in your PATH.
+
+Notice that if you have another PyMOL plugin that uses goChem you will already have the file gochem.py in your PyMOL 
+plugins directory. You do not need to copy it again, but there is not danger in overwriting it.
+
+*Usage tips
+
+When goQM fails it is most likely for one of the following reasons:
+
+- One or more of the selections do not have the hydrogens placed properly.
+
+- The QM program selected is unavailable or its executable is not in the PATH.
+
+- The charge is not properly set.
+
+The last point can be tricky because the charge is the total charge of all selections.
+
+When goQM fails, checking the cut-geometry produced by goQM before sending it to optimization (the files OPT.pdb 
+and OPT.xyz) can be useful to pinpoint the problem. Also, check the input and output files of the QM program. All 
+these files will be in the working directory.
+
+A QM calculation will fail if the side chain of a proline is attempted to be added. Because proline's sidechain has
+a second covalent bond to the backbone, this residue is not supported for sidechain-only addition.
+
+As a final, important point:
+
+When you give selections for Backbone residues, always give one more to N-terminal and one more to C-terminal
+than what you actually want. This is because goQM uses the N-ter and C-ter of each backbone selection as capping and
+DOES NOT actually considers them in the calculations. Of course, the previous means that it is currently not possible
+to include a protein's C-terminal or N-terminal residue in a goQM calculations.
+
+
+*Citing.
+
+goQM uses goChem. There is no publication for goQM yet. If you use goRama please support the library 
+by citing it as:
+Mera-Adasme, R., Savasci, G., Pesonen, J. "goChem, a library for computational chemistry", http://www.gochem.org
+
+If you cite goChem, please let us know so we can add your paper to the list in the gochem website.
+
+
+goQM is open-source. You can find the sources in github.com/rmera/gopymol
+
